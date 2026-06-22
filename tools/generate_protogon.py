@@ -250,7 +250,11 @@ def make_pad(fp: pcbnew.FOOTPRINT, number: str, at: tuple[float, float],
     pad.SetShape(shape)
     pad.SetSize(v(size, size))
     pad.SetDrillSize(v(drill, drill))
-    pad.SetLayerSet(pcbnew.LSET.AllCuMask())
+    # Keep the PAD's default through-hole layer set: F/B copper PLUS the F/B solder-mask
+    # apertures. The original code overrode it with LSET.AllCuMask() -- which, despite the
+    # name, is the COPPER layers only -- so the soldermask covered every annular ring and
+    # no proto pad was solderable. Leaving the default exposes a gold ring on every pad
+    # (the whole point of a protoboard).
     pad.SetPosition(v(*at))
     pad.SetNumber(number)
     if net_item is not None:
