@@ -2,21 +2,15 @@
 
 A small, bare **protoboard "hexpansion"** that [Code Myriad](https://codemyriad.io)
 is giving away at EMF Camp. It slots into the EMF badge's hexpansion port and breaks
-the badge's I²C bus, 3V3 and GND out onto a solderable prototyping field, so a maker
-can build their own add-on on the spot.
+the badge's I²C bus, 3V3 and GND out onto a solderable prototyping field.
 
-![Code Myriad Protogon, rendered in front of the EMF sign](codemyriad-protogon/renders/blender/protogon-loop-poster.png)
-
-*Cycles/OptiX render of the board (black soldermask, ENIG gold, every proto hole
-solderable). Animated turntable: [`protogon-loop.gif`](codemyriad-protogon/renders/blender/protogon-loop.gif)
-· back side and routing in [`codemyriad-protogon/renders/`](codemyriad-protogon/renders/).*
+![Code Myriad Protogon, rendered in front of the EMF sign](codemyriad-protogon/renders/blender/protogon-loop.gif)
 
 ## Why this exists (rationale)
 
 The EMF Camp badge (2024 **Tildagon**, 2026 **Spaceagon** — same hexpansion interface)
 has six slots for small ~1 mm "hexpansion" boards. We wanted a giveaway that is genuinely
-useful, cheap enough to hand out in quantity, and reliable on the **first paid order**
-(we're a software company and can't iterate on hardware at the event).
+useful and cheap enough to hand out in quantities.
 
 A **bare passive protoboard breakout** is the answer: lowest cost, lowest risk, no
 assembly, nothing to go wrong electrically. It just has to slot in, make reliable contact,
