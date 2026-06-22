@@ -1,8 +1,7 @@
-# Code Myriad Protogon
+# Protogon
 
-A small, bare **protoboard "hexpansion"** that [Code Myriad](https://codemyriad.io)
-is giving away at EMF Camp. It slots into the EMF badge's hexpansion port and breaks
-the badge's I²C bus, 3V3 and GND out onto a solderable prototyping field.
+A small, bare **protoboard "hexpansion"** that breaks the badge's I²C bus, 3V3 and GND
+out onto a solderable prototyping field.
 
 ![Code Myriad Protogon, rendered in front of the EMF sign](codemyriad-protogon/renders/blender/protogon-loop.gif)
 
