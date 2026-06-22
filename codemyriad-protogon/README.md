@@ -92,7 +92,7 @@ blender -b -P ../tools/render_protogon_blender.py -- \
   --bottom-texture renders/texture/bottom-surface-clean.png
 ```
 
-The loop is 96 frames at 24 fps (4.0 s). The GIF is derived by **integer**
+The loop is 192 frames at 24 fps (8.0 s). The GIF is derived by **integer**
 decimation (every 2nd frame) and encoded at 12.5 fps so every frame has an
 identical 8-centisecond delay — this keeps the motion judder-free. Avoid
 re-encoding the GIF at a frame rate that is not an integer divisor of the source

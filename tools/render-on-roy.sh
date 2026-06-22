@@ -27,7 +27,7 @@ ENGINE="${ENGINE:-cycles}"
 SAMPLES="${SAMPLES:-128}"
 WIDTH="${WIDTH:-1280}"
 HEIGHT="${HEIGHT:-720}"
-FRAMES="${FRAMES:-96}"
+FRAMES="${FRAMES:-192}"
 
 # Resolve repo root = parent of this script's tools/ directory.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

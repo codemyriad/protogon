@@ -19,7 +19,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--outdir", required=True)
-    parser.add_argument("--frames", type=int, default=96)
+    parser.add_argument("--frames", type=int, default=192,
+                        help="frames for a full 360 turn; 192 @ 24fps = 8.0s/rev (slow, "
+                             "calm turntable). Keep it even so the GIF's stride-2 "
+                             "decimation stays exact.")
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
@@ -382,6 +385,12 @@ def main() -> None:
     bpy.context.collection.objects.link(camera)
     camera.data.type = "ORTHO"
     camera.data.ortho_scale = max_dim * 1.62
+    # Clip planes scaled to the model. The camera sits ~2.4*max_dim from the origin and
+    # the board spans ~max_dim about it, so as a corner swings toward the camera it can
+    # fall inside Blender's default 0.1 near-clip and get sliced flat (it looked like the
+    # board was clipped to a bounding cube). Generous, scale-relative planes prevent that.
+    camera.data.clip_start = max_dim * 0.1
+    camera.data.clip_end = max_dim * 10.0
     # 3/4 view from the front, slightly to the side and above. The board stands on the
     # Z axis, so a front-ish camera sees a thin lit edge (not nothing) at the edge-on turn.
     camera.location = Vector((max_dim * 0.55, -max_dim * 2.3, max_dim * 0.6))
