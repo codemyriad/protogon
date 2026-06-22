@@ -43,6 +43,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--xray", action="store_true",
                         help="make the soldermask translucent so the copper routing/traces "
                              "show through -- a design-inspection view, not a product shot")
+    parser.add_argument("--hdri", default="renders/hdri/studio_small_03_1k.hdr",
+                        help="studio HDRI (relative to cwd) for soft lighting/reflections; "
+                             "falls back to a flat neutral world if missing")
+    parser.add_argument("--standard-view", action="store_true",
+                        help="use the Standard view transform (literal colours) for a "
+                             "colour-accuracy check instead of the AgX beauty transform")
+    parser.add_argument("--background", default="renders/bg/EMF-photo.jpg",
+                        help="backdrop photo composited behind the board (relative to cwd); "
+                             "pass '' or a missing path for the plain studio backdrop")
     parser.add_argument("--top-texture")
     parser.add_argument("--bottom-texture")
     # GIF/contact-sheet deliverables are derived from the rendered MP4 (needs ffmpeg).
@@ -77,18 +86,32 @@ def scene_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
 
 
 def material(name: str, color: tuple[float, float, float, float],
-             metallic: float = 0.0, roughness: float = 0.45,
-             alpha: float = 1.0) -> bpy.types.Material:
+             metallic: float = 0.0, roughness: float = 0.45, alpha: float = 1.0,
+             coat: float = 0.0, coat_roughness: float = 0.1,
+             spec_tint: tuple[float, float, float, float] | None = None,
+             transmission: float = 0.0) -> bpy.types.Material:
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = color
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
     if bsdf is not None:
-        bsdf.inputs["Base Color"].default_value = color
-        bsdf.inputs["Metallic"].default_value = metallic
-        bsdf.inputs["Roughness"].default_value = roughness
-        if "Alpha" in bsdf.inputs:
-            bsdf.inputs["Alpha"].default_value = alpha
+        ins = bsdf.inputs
+        ins["Base Color"].default_value = color
+        ins["Metallic"].default_value = metallic
+        ins["Roughness"].default_value = roughness
+        if "Alpha" in ins:
+            ins["Alpha"].default_value = alpha
+        # Blender 4.x Principled inputs: "Coat Weight"/"Coat Roughness" (was
+        # Clearcoat), "Specular Tint" (now a color = F82 metal edge tint),
+        # "Transmission Weight". Guarded so other Blender versions don't break.
+        if coat and "Coat Weight" in ins:
+            ins["Coat Weight"].default_value = coat
+            if "Coat Roughness" in ins:
+                ins["Coat Roughness"].default_value = coat_roughness
+        if spec_tint is not None and "Specular Tint" in ins:
+            ins["Specular Tint"].default_value = spec_tint
+        if transmission and "Transmission Weight" in ins:
+            ins["Transmission Weight"].default_value = transmission
     return mat
 
 
@@ -98,15 +121,21 @@ def apply_board_materials(objects: list[bpy.types.Object], xray: bool = False) -
     # soldermask translucent so the copper routing (the J1->J2 breakout traces) is visible:
     # a design-inspection view, NOT a truthful product shot.
     mats = {
-        # Black soldermask: near-black but not a void, semi-gloss so it catches a highlight.
-        "mask": material("black soldermask", (0.017, 0.017, 0.020, 1.0), roughness=0.45,
+        # Black soldermask: a raised-black base (NOT pure black, which reads as a flat
+        # void) plus a Coat lacquer layer for the semi-gloss wet sheen real mask has.
+        "mask": material("black soldermask", (0.013, 0.013, 0.016, 1.0),
+                         roughness=0.42, coat=0.30, coat_roughness=0.10,
                          alpha=(0.15 if xray else 1.0)),
-        # FR4 substrate seen at the board edge / inside holes: warm dark tan.
-        "fr4": material("FR4 edge", (0.028, 0.024, 0.018, 1.0), roughness=0.7),
-        # ENIG: a real metal (metallic 1.0), warm satin gold -- this is what makes the
-        # finish read as gold instead of flat yellow.
-        "gold": material("ENIG gold", (0.86, 0.62, 0.21, 1.0), metallic=1.0, roughness=0.30),
-        "silk": material("white silkscreen", (0.90, 0.90, 0.87, 1.0), roughness=0.6),
+        # FR4 edge: desaturated tan, slightly translucent at the visible 1mm edge.
+        "fr4": material("FR4 edge", (0.055, 0.045, 0.028, 1.0), roughness=0.8,
+                        transmission=0.25),
+        # ENIG: real gold metal (Metallic 1.0), paler than jewellery gold, satin (not a
+        # mirror), with a warm Specular Tint (F82 edge tint) so it reads as ENIG, not chrome.
+        "gold": material("ENIG gold", (0.85, 0.66, 0.30, 1.0), metallic=1.0,
+                         roughness=0.35, spec_tint=(1.0, 0.82, 0.52, 1.0)),
+        # White silkscreen: matte printed ink, NO emission (emission would glow and
+        # destroy assessability).
+        "silk": material("white silkscreen", (0.92, 0.92, 0.90, 1.0), roughness=0.9),
     }
     for obj in objects:
         if obj.type != "MESH":
@@ -324,6 +353,15 @@ def configure_gpu(scene: bpy.types.Scene, samples: int, prefer: str = "auto",
         enabled = [d.name for d in prefs.devices if d.use]
         print(f"Cycles GPU backend: {chosen}; devices: {enabled}", flush=True)
     scene.cycles.samples = samples
+    # Adaptive sampling spends samples only where needed (cheaper, clean turntable frames).
+    scene.cycles.use_adaptive_sampling = True
+    scene.cycles.adaptive_threshold = 0.01
+    # Gold metal + small bright sources spark fireflies; clamp indirect and soften noisy
+    # sharp gold reflections, and disable caustics (a big noise source, irrelevant here).
+    scene.cycles.sample_clamp_indirect = 10.0
+    scene.cycles.blur_glossy = 1.0
+    scene.cycles.caustics_reflective = False
+    scene.cycles.caustics_refractive = False
     if denoiser == "none":
         scene.cycles.use_denoising = False
     else:
@@ -332,7 +370,70 @@ def configure_gpu(scene: bpy.types.Scene, samples: int, prefer: str = "auto",
             scene.cycles.denoiser = "OPTIX" if denoiser == "optix" else "OPENIMAGEDENOISE"
         except TypeError:
             pass
+        # OIDN best-practice for fine silk text + gold micro-detail: Albedo+Normal guiding
+        # passes with Accurate prefilter preserve edges that the 'None' prefilter blurs.
+        for attr, val in (("denoising_input_passes", "RGB_ALBEDO_NORMAL"),
+                          ("denoising_prefilter", "ACCURATE")):
+            if hasattr(scene.cycles, attr):
+                try:
+                    setattr(scene.cycles, attr, val)
+                except TypeError:
+                    pass
     return chosen
+
+
+def setup_world(scene: bpy.types.Scene, hdri_path: str | None,
+                bg_color: tuple[float, float, float], strength: float = 1.0) -> None:
+    """Light the scene with a studio HDRI (soft reflections that make gold/coat read as
+    metal/lacquer) while showing a clean solid backdrop to the camera, via a Light Path
+    'Is Camera Ray' mix. Falls back to a flat neutral world if the HDRI file is missing."""
+    world = scene.world or bpy.data.worlds.new("World")
+    scene.world = world
+    world.use_nodes = True
+    nt = world.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputWorld")
+    solid = nt.nodes.new("ShaderNodeBackground")
+    solid.inputs["Color"].default_value = (*bg_color, 1.0)
+    if hdri_path and Path(hdri_path).exists():
+        env = nt.nodes.new("ShaderNodeTexEnvironment")
+        env.image = bpy.data.images.load(hdri_path)
+        envbg = nt.nodes.new("ShaderNodeBackground")
+        envbg.inputs["Strength"].default_value = strength
+        lp = nt.nodes.new("ShaderNodeLightPath")
+        mix = nt.nodes.new("ShaderNodeMixShader")
+        nt.links.new(env.outputs["Color"], envbg.inputs["Color"])
+        nt.links.new(lp.outputs["Is Camera Ray"], mix.inputs["Fac"])
+        nt.links.new(envbg.outputs["Background"], mix.inputs[1])  # non-camera -> HDRI light/reflections
+        nt.links.new(solid.outputs["Background"], mix.inputs[2])  # camera -> clean solid backdrop
+        nt.links.new(mix.outputs["Shader"], out.inputs["Surface"])
+    else:
+        print(f"WARNING: HDRI '{hdri_path}' not found; using a flat neutral world.",
+              file=sys.stderr)
+        nt.links.new(solid.outputs["Background"], out.inputs["Surface"])
+
+
+def setup_background_composite(scene: bpy.types.Scene, image_path: str) -> None:
+    """Composite the rendered board (transparent film) over a backdrop photo, so the board
+    appears in front of it. Lighting and reflections still come from the studio HDRI, so
+    the materials read true; only the camera-visible background becomes the photo."""
+    scene.render.film_transparent = True
+    scene.use_nodes = True
+    nt = scene.node_tree
+    nt.nodes.clear()
+    rl = nt.nodes.new("CompositorNodeRLayers")
+    img = nt.nodes.new("CompositorNodeImage")
+    img.image = bpy.data.images.load(image_path)
+    scale = nt.nodes.new("CompositorNodeScale")
+    scale.space = "RENDER_SIZE"
+    if hasattr(scale, "frame_method"):
+        scale.frame_method = "CROP"  # fill the frame, crop any overflow
+    over = nt.nodes.new("CompositorNodeAlphaOver")
+    comp = nt.nodes.new("CompositorNodeComposite")
+    nt.links.new(img.outputs["Image"], scale.inputs["Image"])
+    nt.links.new(scale.outputs["Image"], over.inputs[1])  # backdrop photo (behind)
+    nt.links.new(rl.outputs["Image"], over.inputs[2])      # board render, on top (its alpha)
+    nt.links.new(over.outputs["Image"], comp.inputs["Image"])
 
 
 def main() -> None:
@@ -408,33 +509,26 @@ def main() -> None:
     look_at(camera, Vector((0, 0, 0)))
     bpy.context.scene.camera = camera
 
-    # Lighting: SUN lamps, because a sun's irradiance is independent of distance --
-    # and therefore independent of the model's import scale (mm-as-units vs metres),
-    # which an area light's wattage is NOT. Three suns (key / fill / rim) give the
-    # ENIG gold a soft directional gleam and separate the board from the backdrop.
-    # `angle` softens the shadow edges. look_at() aims each sun's -Z at the origin.
-    def add_sun(name: str, location: Vector, strength: float, angle: float) -> bpy.types.Object:
-        sun = bpy.data.objects.new(name, bpy.data.lights.new(name, "SUN"))
-        bpy.context.collection.objects.link(sun)
-        sun.location = location
-        look_at(sun, Vector((0, 0, 0)))
-        sun.data.energy = strength
-        sun.data.angle = angle
-        return sun
+    # Lighting: a neutral studio HDRI gives soft, believable environment reflections --
+    # what makes the ENIG gold and the soldermask coat actually read as those materials --
+    # while a clean solid colour is shown to the camera (Light Path "Is Camera Ray") so the
+    # backdrop stays calm and assess-able. Two soft area lights sweep highlights across the
+    # board to reveal the silk and the mask sheen. Area energy is scaled by max_dim^2 so
+    # brightness stays independent of the model's import scale.
+    setup_world(bpy.context.scene, args.hdri, bg_color=(0.05, 0.05, 0.06), strength=0.55)
 
-    add_sun("Key",  Vector((-max_dim * 1.0, -max_dim * 1.2, max_dim * 1.5)), 4.0, 0.09)
-    add_sun("Fill", Vector(( max_dim * 1.4, -max_dim * 0.6, max_dim * 0.4)), 1.3, 0.15)
-    add_sun("Rim",  Vector(( max_dim * 0.2,  max_dim * 1.4, max_dim * 1.0)), 4.0, 0.05)
+    def add_area(name: str, location: Vector, energy: float, size: float) -> bpy.types.Object:
+        light = bpy.data.objects.new(name, bpy.data.lights.new(name, "AREA"))
+        bpy.context.collection.objects.link(light)
+        light.location = location
+        look_at(light, Vector((0, 0, 0)))
+        light.data.energy = energy
+        light.data.size = size
+        return light
 
-    # World: a soft neutral environment for ambient fill plus a calm dark-grey backdrop
-    # so the lit board pops. Scene worlds use nodes by default, so drive the Background.
-    world = bpy.context.scene.world or bpy.data.worlds.new("World")
-    bpy.context.scene.world = world
-    world.use_nodes = True
-    background = world.node_tree.nodes.get("Background")
-    if background is not None:
-        background.inputs["Color"].default_value = (0.09, 0.09, 0.11, 1.0)
-        background.inputs["Strength"].default_value = 1.0
+    e = max_dim * max_dim
+    add_area("Key", Vector((-max_dim * 1.1, -max_dim * 1.4, max_dim * 1.5)), e * 30.0, max_dim * 1.3)
+    add_area("Rim", Vector(( max_dim * 0.6,  max_dim * 1.5, max_dim * 1.1)), e * 13.0, max_dim * 1.1)
 
     scene = bpy.context.scene
     if args.engine == "workbench":
@@ -458,10 +552,32 @@ def main() -> None:
     scene.render.resolution_y = args.height
     scene.render.fps = args.fps
     scene.render.film_transparent = False
-    scene.view_settings.view_transform = "Filmic"
-    scene.view_settings.look = "Medium High Contrast"
+    # AgX for the beauty render (rolls bright gold highlights off gracefully like film);
+    # Standard for a colour-accuracy snapshot (literal material values, to compare against
+    # the kicad-cli stackup render and physical swatches).
+    if args.standard_view:
+        scene.view_settings.view_transform = "Standard"
+    else:
+        try:
+            scene.view_settings.view_transform = "AgX"
+        except TypeError:
+            scene.view_settings.view_transform = "Filmic"
+        for look in ("AgX - Medium High Contrast", "Medium High Contrast", "None"):
+            try:
+                scene.view_settings.look = look
+                break
+            except TypeError:
+                continue
     scene.view_settings.exposure = 0
     scene.view_settings.gamma = 1
+
+    # Optional photo backdrop (e.g. the EMF sign): board on transparent film composited
+    # over the image. Lighting/reflections still come from the studio HDRI.
+    if args.background and Path(args.background).exists():
+        setup_background_composite(scene, args.background)
+    elif args.background:
+        print(f"WARNING: backdrop '{args.background}' not found; plain backdrop kept.",
+              file=sys.stderr)
 
     scene.frame_set(1)
     scene.render.image_settings.file_format = "PNG"

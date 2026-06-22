@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 from pathlib import Path
@@ -11,6 +12,7 @@ import pcbnew
 
 
 ROOT = Path(__file__).resolve().parents[1]
+LOGO_JSON = Path(__file__).resolve().parent / "codemyriad-logo.json"
 UPSTREAM = ROOT / "_upstream_badge_2024_hardware" / "hexpansion"
 OUT = ROOT / "codemyriad-protogon"
 
@@ -44,6 +46,20 @@ def clear_generated_items(board: pcbnew.BOARD) -> None:
         if fp.GetReference() in {"H1", "H2"}:
             for pad in fp.Pads():
                 pad.SetNetCode(0)
+        if fp.GetReference() == "J1":
+            # Hide the edge connector's TOP / BOTTOM / pin-1 silk text: it sits in
+            # the connector wing (x~104) where the branding now goes. Orientation
+            # stays obvious from the board shape and the PROTOGON/emblem branding.
+            # Done here, where GetFootprints() still yields wrapped FOOTPRINT objects
+            # (a later GetFootprints() call returns un-downcast SWIG pointers).
+            fp.Reference().SetVisible(False)
+            fp.Value().SetVisible(False)
+            # Move (don't structurally remove -- that corrupts the SWIG board state
+            # mid-iteration) the silk text off the silkscreen to a non-plotted layer.
+            for item in list(fp.GraphicalItems()):
+                if (isinstance(item, pcbnew.PCB_TEXT)
+                        and item.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)):
+                    item.SetLayer(pcbnew.Cmts_User)
     footprints_to_remove = [
         fp for fp in all_footprints if fp.GetReference() not in keep_refs
     ]
@@ -328,10 +344,52 @@ def add_via(board: pcbnew.BOARD, at: tuple[float, float], net_name: str,
     board.Add(via)
 
 
+def add_logo(board: pcbnew.BOARD, center: tuple[float, float],
+             layer: int = pcbnew.B_SilkS, scale: float = 1.0) -> None:
+    """Place the Code Myriad emblem as filled silkscreen polygons centered at `center`.
+
+    Geometry is baked in tools/codemyriad-logo.json (converted from the official
+    codemyriad.io/logo.svg by tools/svg_logo_to_silk.py) -- polygons in mm, centered
+    on their own origin. The emblem is left/right and top/bottom symmetric, so it
+    needs no back-layer mirroring; the ring's hole is preserved by a bridge already
+    present in the source path.
+    """
+    data = json.loads(LOGO_JSON.read_text())
+    cx, cy = center
+    for poly in data["polys"]:
+        sps = pcbnew.SHAPE_POLY_SET()
+        sps.NewOutline()
+        for x, y in poly:
+            sps.Append(mm(cx + x * scale), mm(cy + y * scale))
+        shape = pcbnew.PCB_SHAPE(board)
+        shape.SetShape(pcbnew.SHAPE_T_POLY)
+        shape.SetPolyShape(sps)
+        shape.SetLayer(layer)
+        shape.SetFilled(True)
+        shape.SetWidth(mm(0.12))
+        board.Add(shape)
+
+
+BRAND_X = 107.0  # connector-wing center: toward the edge connector (x~98),
+                 # clear of the through-hole proto field (which starts at x~110.85)
+
+
+LOGO_SCALE = 0.82  # ~8.2 mm wide: fits the connector wing with margin on both sides
+
+
+def add_branding(board: pcbnew.BOARD, layer: int, protogon: bool) -> None:
+    """Code Myriad branding (emblem + codemyriad.io, optional PROTOGON) in the
+    connector wing -- toward the edge connector and clear of the proto field.
+    Placed on both faces (call once per side)."""
+    if protogon:
+        add_text(board, "PROTOGON", (BRAND_X, 93.0), size=0.8, layer=layer, bold=True)
+    add_logo(board, (BRAND_X, 100.0), layer=layer, scale=LOGO_SCALE)
+    add_text(board, "codemyriad.io", (BRAND_X, 107.0), size=0.85, layer=layer, bold=True)
+
+
 def add_silkscreen(board: pcbnew.BOARD) -> None:
     add_text(board, "3V3", (119.3, 83.47), size=0.8, bold=True, align="right")
     add_text(board, "GND", (119.3, 116.49), size=0.8, bold=True, align="right")
-    add_text(board, "codemyriad.io", (146.45, 100.0), size=0.9, angle=90, bold=True)
 
     # Breakout labels aligned with the official J2 pin map.
     labels = [
@@ -353,15 +411,10 @@ def add_silkscreen(board: pcbnew.BOARD) -> None:
     # and bottom text; these make the fab side clearer on the finished PCB.
     add_text(board, "+", (106.1, 94.0), size=0.9, bold=True)
 
-    # Back-side branding. It is deliberately placed on the connector wing so the
-    # through-hole prototyping field remains usable.
-    add_text(board, "PROTOGON", (112.5, 92.15), size=0.9, layer=pcbnew.B_SilkS, bold=True)
-    add_text(board, "codemyriad.io", (112.5, 107.8), size=1.1, layer=pcbnew.B_SilkS, bold=True)
-    add_circle(board, (112.5, 100.0), 2.25, layer=pcbnew.B_SilkS, width=0.35)
-    add_line(board, (105.0, 100.0), (109.0, 100.0), layer=pcbnew.B_SilkS, width=0.35)
-    add_line(board, (116.0, 100.0), (120.0, 100.0), layer=pcbnew.B_SilkS, width=0.35)
-    add_line(board, (112.5, 94.4), (112.5, 97.0), layer=pcbnew.B_SilkS, width=0.35)
-    add_line(board, (112.5, 103.0), (112.5, 105.6), layer=pcbnew.B_SilkS, width=0.35)
+    # Branding on BOTH faces, in the connector wing (toward the edge connector,
+    # clear of the through-hole proto field). Back keeps the PROTOGON name.
+    add_branding(board, pcbnew.B_SilkS, protogon=True)
+    add_branding(board, pcbnew.F_SilkS, protogon=False)
 
 
 def add_fab_notes(board: pcbnew.BOARD) -> None:
