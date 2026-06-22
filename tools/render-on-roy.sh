@@ -11,9 +11,15 @@
 #   SAMPLES     Cycles samples           (default 128)
 #   WIDTH       frame width  in px       (default 1280)
 #   HEIGHT      frame height in px       (default 720)
-#   FRAMES      loop length  in frames   (default 96)
+#   FRAMES      loop length  in frames   (default 192)
 #   ENGINE      render engine            (default cycles)
+#   XRAY        set to 1 for the translucent-soldermask routing view (default off)
+#   OUTSUB      output subdir under renders/ (default blender; e.g. blender-xray)
 #   REMOTE_DIR  remote repo dir name     (default codemyriad-protogon-work)
+#
+# Examples:
+#   tools/render-on-roy.sh                                  # product loop
+#   XRAY=1 OUTSUB=blender-xray tools/render-on-roy.sh       # X-ray routing loop
 #
 # Requirements on HOST: ssh access, Blender >= 4.2 and ffmpeg on PATH, an NVIDIA
 # GPU (OptiX). Run this script from anywhere inside the repo.
@@ -28,6 +34,8 @@ SAMPLES="${SAMPLES:-128}"
 WIDTH="${WIDTH:-1280}"
 HEIGHT="${HEIGHT:-720}"
 FRAMES="${FRAMES:-192}"
+OUTSUB="${OUTSUB:-blender}"
+xray_flag=""; [ -n "${XRAY:-}" ] && xray_flag="--xray"
 
 # Resolve repo root = parent of this script's tools/ directory.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -40,19 +48,20 @@ rsync -az --info=stats1 \
   --exclude='*.log' \
   ./ "${HOST}:${REMOTE_DIR}/"
 
-echo ">> [2/3] rendering on ${HOST} GPU (${ENGINE}, ${WIDTH}x${HEIGHT}, ${SAMPLES} spp, ${FRAMES} frames) ..."
+echo ">> [2/3] rendering on ${HOST} GPU (${ENGINE}, ${WIDTH}x${HEIGHT}, ${SAMPLES} spp, ${FRAMES} frames${xray_flag:+, XRAY}) -> renders/${OUTSUB} ..."
 # Render the REAL board geometry (copper/pads/silk/mask/holes) from the GLB with
 # lit PCB materials -- NOT the old flat emissive decal planes (which faked the
 # detail, mis-oriented the back face, and squared off a hexagon corner). To fall
 # back to the decal art, re-add --top-texture/--bottom-texture here.
 ssh "$HOST" "cd ~/${REMOTE_DIR}/codemyriad-protogon && blender -b -P ../tools/render_protogon_blender.py -- \
-  --engine ${ENGINE} --samples ${SAMPLES} --width ${WIDTH} --height ${HEIGHT} --frames ${FRAMES} \
+  --engine ${ENGINE} --samples ${SAMPLES} --width ${WIDTH} --height ${HEIGHT} --frames ${FRAMES} ${xray_flag} \
   --model renders/model/codemyriad-protogon.glb \
-  --outdir renders/blender"
+  --outdir renders/${OUTSUB}"
 
 echo ">> [3/3] pulling rendered outputs back into the repo ..."
-rsync -az "${HOST}:${REMOTE_DIR}/codemyriad-protogon/renders/blender/" \
-  codemyriad-protogon/renders/blender/
+mkdir -p "codemyriad-protogon/renders/${OUTSUB}"
+rsync -az "${HOST}:${REMOTE_DIR}/codemyriad-protogon/renders/${OUTSUB}/" \
+  "codemyriad-protogon/renders/${OUTSUB}/"
 
-echo ">> done. Updated deliverables in codemyriad-protogon/renders/blender/:"
-ls -la codemyriad-protogon/renders/blender/
+echo ">> done. Updated deliverables in codemyriad-protogon/renders/${OUTSUB}/:"
+ls -la "codemyriad-protogon/renders/${OUTSUB}/"
