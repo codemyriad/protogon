@@ -15,6 +15,33 @@ This revision is a bare protoboard functional equivalent inspired by JakeW's Pro
 
 > Source of truth: `codemyriad-protogon.kicad_pcb` is generated programmatically by `../tools/generate_protogon.py` and is the authoritative netlist. `codemyriad-protogon.kicad_sch` is a retained copy of the upstream reference schematic (it still describes the upstream LED/jumper variant and is not in parity with this PCB) — do not treat it as the design source.
 
+### Regenerating the board
+
+`generate_protogon.py` transforms the official EMF hexpansion board into this one,
+so it needs two things that are **not** committed to this repo:
+
+1. **KiCad's `pcbnew` Python module** on the path (run with the Python that ships
+   with KiCad, e.g. KiCad 9's bundled interpreter).
+2. **The upstream badge hardware**, cloned into `_upstream_badge_2024_hardware/`
+   at the repo root (gitignored — the generator reads
+   `_upstream_badge_2024_hardware/hexpansion/hexpansion.kicad_pcb`):
+
+   ```
+   git clone https://github.com/emfcamp/badge-2024-hardware.git \
+     _upstream_badge_2024_hardware
+   # pin to the reviewed revision for reproducibility:
+   git -C _upstream_badge_2024_hardware checkout 33ff848
+   ```
+
+Then, from the repo root:
+
+```
+python3 tools/generate_protogon.py          # rewrites codemyriad-protogon.kicad_pcb
+```
+
+After regenerating, re-export the fabrication outputs with `kicad-cli` (Gerber/drill
+zip, DRC report, STEP) so `fabrication/` and `drc-report.txt` stay in sync with the board.
+
 ## Fabrication Settings
 
 Use the generated Gerber zip as the order source:
