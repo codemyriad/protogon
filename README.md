@@ -2,8 +2,14 @@
 
 A small, bare **protoboard "hexpansion"** that [Code Myriad](https://codemyriad.io)
 is giving away at EMF Camp. It slots into the EMF badge's hexpansion port and breaks
-the badge's I²C bus, 3V3 and GND out onto a solderable prototyping field — so a maker
+the badge's I²C bus, 3V3 and GND out onto a solderable prototyping field, so a maker
 can build their own add-on on the spot.
+
+![Code Myriad Protogon, rendered in front of the EMF sign](codemyriad-protogon/renders/blender/protogon-loop-poster.png)
+
+*Cycles/OptiX render of the board (black soldermask, ENIG gold, every proto hole
+solderable). Animated turntable: [`protogon-loop.gif`](codemyriad-protogon/renders/blender/protogon-loop.gif)
+· back side and routing in [`codemyriad-protogon/renders/`](codemyriad-protogon/renders/).*
 
 ## Why this exists (rationale)
 
@@ -45,9 +51,6 @@ bottom (GND) — the rest of the field is yours.
 | --- | --- |
 | [`codemyriad-protogon/`](codemyriad-protogon/) | The KiCad design, fabrication outputs, and renders. See its [README](codemyriad-protogon/README.md) for board detail and how to regenerate. |
 | [`tools/`](tools/) | `generate_protogon.py` (generates the board — the source of truth), `render_protogon_blender.py` + `render-on-roy.sh` (GPU renders), `svg_logo_to_silk.py` (logo → silk). |
-| [`docs/`](docs/) | `CONTRACTOR-BRIEF.md`, `PRODUCTION-PRICING.md`, `QUOTE-RECIPE.json` — the hardware spec for a freelancer and the supplier/cost research. |
-| `internal/` | Private hiring notes (Code Myriad internal). |
-| `codemyriad-protogon/qwiic-experiment/` | A separate Qwiic/STEMMA-QT connector variant — exploratory, not the giveaway design. |
 | `_upstream_badge_2024_hardware/` | Local clone of the EMF badge hardware (reference; **not tracked** — see `.gitignore`). |
 
 ## Status & ordering
@@ -58,10 +61,8 @@ bottom (GND) — the rest of the field is yours.
 - **Order source:** `codemyriad-protogon/fabrication/codemyriad-protogon-fab.zip`.
 - **Fab spec:** 2-layer, 1.0 mm FR4, black soldermask, white silkscreen, **ENIG** (no
   HASL), no edge bevel, 1 oz copper.
-- **Pricing & quotes:** [`docs/PRODUCTION-PRICING.md`](docs/PRODUCTION-PRICING.md),
-  [`docs/QUOTE-RECIPE.json`](docs/QUOTE-RECIPE.json).
 - ⚠️ **Gate:** validate the physical connector/insertion fit against a real 2024 badge
-  before any quantity order. No bulk (150–300 pc) quote is captured yet.
+  before any quantity order.
 
 ## Renders
 

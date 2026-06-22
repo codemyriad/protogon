@@ -94,5 +94,3 @@ integer divisor of the source fps.
   without a global library setup.
 - The board outline and edge-connector footprint derive from the official EMF badge 2024
   hexpansion template; see `CERN-OHL-P-2.0.txt` for the license.
-- Pricing and the reusable quote recipe live in [`../docs/`](../docs/)
-  (`PRODUCTION-PRICING.md`, `QUOTE-RECIPE.json`).
