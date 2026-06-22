@@ -77,7 +77,6 @@ pipeline (materials, HDRI lighting, EMF-sign backdrop, color management).
 
 ## License
 
-Hardware is licensed **CERN-OHL-P v2** (permissive) — see
-[`codemyriad-protogon/CERN-OHL-P-2.0.txt`](codemyriad-protogon/CERN-OHL-P-2.0.txt). The
-board outline and edge-connector footprint derive from the official EMF badge hexpansion
+Hardware is licensed **CERN-OHL-P v2** (permissive) — see [`LICENSE`](LICENSE). The board
+outline and edge-connector footprint derive from the official EMF badge hexpansion
 template.
