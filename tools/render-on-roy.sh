@@ -49,10 +49,8 @@ rsync -az --info=stats1 \
   ./ "${HOST}:${REMOTE_DIR}/"
 
 echo ">> [2/3] rendering on ${HOST} GPU (${ENGINE}, ${WIDTH}x${HEIGHT}, ${SAMPLES} spp, ${FRAMES} frames${xray_flag:+, XRAY}) -> renders/${OUTSUB} ..."
-# Render the REAL board geometry (copper/pads/silk/mask/holes) from the GLB with
-# lit PCB materials -- NOT the old flat emissive decal planes (which faked the
-# detail, mis-oriented the back face, and squared off a hexagon corner). To fall
-# back to the decal art, re-add --top-texture/--bottom-texture here.
+# Renders the real board geometry (copper/pads/silk/mask/holes) from the GLB with lit
+# PCB materials, an HDRI studio environment, and the EMF-sign photo backdrop.
 ssh "$HOST" "cd ~/${REMOTE_DIR}/codemyriad-protogon && blender -b -P ../tools/render_protogon_blender.py -- \
   --engine ${ENGINE} --samples ${SAMPLES} --width ${WIDTH} --height ${HEIGHT} --frames ${FRAMES} ${xray_flag} \
   --model renders/model/codemyriad-protogon.glb \

@@ -52,8 +52,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--background", default="renders/bg/EMF-photo.jpg",
                         help="backdrop photo composited behind the board (relative to cwd); "
                              "pass '' or a missing path for the plain studio backdrop")
-    parser.add_argument("--top-texture")
-    parser.add_argument("--bottom-texture")
     # GIF/contact-sheet deliverables are derived from the rendered MP4 (needs ffmpeg).
     # 12.5 fps => exactly 8 centiseconds per GIF frame, so every frame has an identical
     # delay (GIF stores delays in whole centiseconds; 12 fps cannot be expressed evenly).
@@ -152,77 +150,6 @@ def apply_board_materials(objects: list[bpy.types.Object], xray: bool = False) -
             mat = mats["fr4"]
         obj.data.materials.clear()
         obj.data.materials.append(mat)
-
-
-def material_slots(obj: bpy.types.Object) -> set[str]:
-    return {slot.material.name for slot in obj.material_slots if slot.material is not None}
-
-
-def image_material(name: str, image_path: str) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.use_nodes = True
-    # Hard alpha cutout for the art PNGs. The Mix(Transparent, Emission, Fac=Alpha)
-    # node graph below does the actual cutout; these material flags are version-dependent
-    # hints (Blender 4.3+/5.0 dropped blend_method/alpha_threshold in favour of
-    # surface_render_method), so set whichever the running Blender exposes.
-    if hasattr(mat, "surface_render_method"):
-        mat.surface_render_method = "DITHERED"
-    if hasattr(mat, "blend_method"):
-        mat.blend_method = "CLIP"
-    if hasattr(mat, "alpha_threshold"):
-        mat.alpha_threshold = 0.35
-    if hasattr(mat, "use_screen_refraction"):
-        mat.use_screen_refraction = False
-    nodes = mat.node_tree.nodes
-    for node in list(nodes):
-        nodes.remove(node)
-    output = nodes.new("ShaderNodeOutputMaterial")
-    image = nodes.new("ShaderNodeTexImage")
-    image.image = bpy.data.images.load(image_path)
-    image.extension = "CLIP"
-    emission = nodes.new("ShaderNodeEmission")
-    transparent = nodes.new("ShaderNodeBsdfTransparent")
-    mix = nodes.new("ShaderNodeMixShader")
-    mat.node_tree.links.new(image.outputs["Color"], emission.inputs["Color"])
-    mat.node_tree.links.new(image.outputs["Alpha"], mix.inputs["Fac"])
-    mat.node_tree.links.new(transparent.outputs["BSDF"], mix.inputs[1])
-    mat.node_tree.links.new(emission.outputs["Emission"], mix.inputs[2])
-    mat.node_tree.links.new(mix.outputs["Shader"], output.inputs["Surface"])
-    return mat
-
-
-def add_surface_plane(name: str, image_path: str, width: float, height: float,
-                      z: float, bottom: bool) -> bpy.types.Object:
-    hw = width / 2
-    hh = height / 2
-    # The board flips 180deg around Y during the loop, so the back face would appear
-    # mirrored. bottom=True reverses the vertex winding to un-mirror the back-face art.
-    # The bottom-surface texture is authored to match this winding -- if you regenerate
-    # the textures, sanity-check a mid-loop frame so the back-face text reads upright.
-    if bottom:
-        verts = [(-hw, -hh, z), (-hw, hh, z), (hw, hh, z), (hw, -hh, z)]
-    else:
-        verts = [(-hw, -hh, z), (hw, -hh, z), (hw, hh, z), (-hw, hh, z)]
-    mesh = bpy.data.meshes.new(name + "_mesh")
-    mesh.from_pydata(verts, [], [(0, 1, 2, 3)])
-    mesh.update()
-    uv_layer = mesh.uv_layers.new(name="UVMap")
-    for loop, uv in zip(uv_layer.data, [(0, 0), (1, 0), (1, 1), (0, 1)]):
-        loop.uv = uv
-    obj = bpy.data.objects.new(name, mesh)
-    obj.data.materials.append(image_material(name + "_material", image_path))
-    bpy.context.collection.objects.link(obj)
-    return obj
-
-
-def keep_body_only(objects: list[bpy.types.Object]) -> list[bpy.types.Object]:
-    kept = []
-    for obj in list(objects):
-        if obj.type == "MESH" and "mat_6" in material_slots(obj):
-            kept.append(obj)
-        else:
-            bpy.data.objects.remove(obj, do_unlink=True)
-    return kept
 
 
 def iter_action_fcurves(action: bpy.types.Action):
@@ -453,24 +380,12 @@ def main() -> None:
     center = (lo + hi) * 0.5
     size = hi - lo
     max_dim = max(size.x, size.y)
-    if bool(args.top_texture) != bool(args.bottom_texture):
-        print("WARNING: --top-texture and --bottom-texture must BOTH be given to use "
-              "surface art; falling back to full board materials.", file=sys.stderr)
-    use_surface_textures = bool(args.top_texture and args.bottom_texture)
-    if use_surface_textures:
-        imported = keep_body_only(imported)
 
     root = bpy.data.objects.new("protogon_root", None)
     bpy.context.collection.objects.link(root)
     for obj in imported:
         obj.location -= center
         obj.parent = root
-    if use_surface_textures:
-        z_pad = max(size.z * 0.08, 0.00006)
-        top = add_surface_plane("top_art", args.top_texture, size.x, size.y, size.z / 2 + z_pad, bottom=False)
-        bottom = add_surface_plane("bottom_art", args.bottom_texture, size.x, size.y, -size.z / 2 - z_pad, bottom=True)
-        top.parent = root
-        bottom.parent = root
 
     bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = args.frames
