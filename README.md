@@ -52,31 +52,3 @@ bottom (GND) — the rest of the field is yours.
 | [`codemyriad-protogon/`](codemyriad-protogon/) | The KiCad design, fabrication outputs, and renders. See its [README](codemyriad-protogon/README.md) for board detail and how to regenerate. |
 | [`tools/`](tools/) | `generate_protogon.py` (generates the board — the source of truth), `render_protogon_blender.py` + `render-on-roy.sh` (GPU renders), `svg_logo_to_silk.py` (logo → silk). |
 | `_upstream_badge_2024_hardware/` | Local clone of the EMF badge hardware (reference; **not tracked** — see `.gitignore`). |
-
-## Status & ordering
-
-- **Board:** KiCad DRC clean (0 violations / 0 unconnected / 0 footprint errors). 10×14
-  proto field, **every pad solderable** (mask-opened ENIG gold rings); 20-pad SFP-style
-  edge connector; two M2 mounting holes; `/HEXP_DET` tied to `/GND`.
-- **Order source:** `codemyriad-protogon/fabrication/codemyriad-protogon-fab.zip`.
-- **Fab spec:** 2-layer, 1.0 mm FR4, black soldermask, white silkscreen, **ENIG** (no
-  HASL), no edge bevel, 1 oz copper.
-- ⚠️ **Gate:** validate the physical connector/insertion fit against a real 2024 badge
-  before any quantity order.
-
-## Renders
-
-Photoreal turntable + stills are produced on a GPU box with Cycles/OptiX:
-
-```
-tools/render-on-roy.sh            # rsync up, render the loop, sync results back
-```
-
-See [`codemyriad-protogon/README.md`](codemyriad-protogon/README.md) for the render
-pipeline (materials, HDRI lighting, EMF-sign backdrop, color management).
-
-## License
-
-Hardware is licensed **CERN-OHL-P v2** (permissive) — see [`LICENSE`](LICENSE). The board
-outline and edge-connector footprint derive from the official EMF badge hexpansion
-template.
