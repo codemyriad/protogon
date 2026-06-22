@@ -13,6 +13,7 @@ _autosave-*
 *-bak
 *.kicad_pcb-bak
 *.kicad_sch-bak
+*.lck
 fp-info-cache
 
 # --- Upstream reference clone (kept locally for reference, not vendored) ---
