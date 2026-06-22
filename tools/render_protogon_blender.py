@@ -23,8 +23,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
-    parser.add_argument("--samples", type=int, default=8)
-    parser.add_argument("--engine", choices=["eevee", "workbench"], default="eevee")
+    parser.add_argument("--samples", type=int, default=None,
+                        help="render samples; default 8 for eevee/workbench, 128 for cycles")
+    parser.add_argument("--engine", choices=["eevee", "workbench", "cycles"], default="eevee",
+                        help="cycles = GPU-accelerated path tracing (accurate, photoreal); "
+                             "eevee = fast rasterizer (default); workbench = flat preview")
+    parser.add_argument("--gpu-backend", choices=["OPTIX", "CUDA", "HIP", "ONEAPI", "auto"],
+                        default="auto", help="Cycles GPU backend; auto prefers OptiX then CUDA")
+    parser.add_argument("--denoiser", choices=["openimagedenoise", "optix", "none"],
+                        default="openimagedenoise",
+                        help="Cycles denoiser; OIDN is the reliable default (the OptiX "
+                             "denoiser fails to initialize on some GPU/driver combos, e.g. "
+                             "Blackwell + Blender 4.5). Path tracing still runs on the GPU.")
+    parser.add_argument("--poster-only", action="store_true",
+                        help="render only the still poster (fast preview), skip the loop/MP4/GIF")
     parser.add_argument("--top-texture")
     parser.add_argument("--bottom-texture")
     # GIF/contact-sheet deliverables are derived from the rendered MP4 (needs ffmpeg).
@@ -257,8 +269,58 @@ def generate_contact(mp4: Path, jpg: Path, frames: int, tiles: str) -> None:
     print(f"Wrote {jpg} ({tiles}, every {step}th frame).")
 
 
+def configure_gpu(scene: bpy.types.Scene, samples: int, prefer: str = "auto",
+                  denoiser: str = "openimagedenoise") -> str | None:
+    """Set up Cycles to render on the GPU.
+
+    Prefers OptiX (RTX RT cores) then CUDA, falling back to CPU with a warning if
+    no GPU backend is usable. Disables the CPU device once a GPU is found so the
+    render does not stall on slow hybrid tiles. Enables a denoiser so even modest
+    sample counts come out clean -- fast AND accurate. OpenImageDenoise is the
+    default because the OptiX denoiser fails to initialise on some GPU/driver
+    combos (observed on RTX 5060 Blackwell + Blender 4.5); path tracing still runs
+    on the GPU regardless of which denoiser is chosen. Prints the chosen device(s)
+    so the render log records what ran. Returns the backend used, or None for CPU.
+    """
+    scene.render.engine = "CYCLES"
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    order = ["OPTIX", "CUDA", "HIP", "ONEAPI"] if prefer == "auto" else [prefer]
+    chosen = None
+    for backend in order:
+        try:
+            prefs.compute_device_type = backend
+        except TypeError:
+            continue  # this Blender build/platform does not offer that backend
+        prefs.refresh_devices()
+        if any(d.type == backend for d in prefs.devices):
+            chosen = backend
+            break
+    if chosen is None:
+        print("WARNING: no GPU backend available; Cycles will render on CPU (slow).",
+              file=sys.stderr)
+        scene.cycles.device = "CPU"
+    else:
+        for device in prefs.devices:
+            device.use = (device.type == chosen)  # GPU(s) only; CPU off
+        scene.cycles.device = "GPU"
+        enabled = [d.name for d in prefs.devices if d.use]
+        print(f"Cycles GPU backend: {chosen}; devices: {enabled}", flush=True)
+    scene.cycles.samples = samples
+    if denoiser == "none":
+        scene.cycles.use_denoising = False
+    else:
+        scene.cycles.use_denoising = True
+        try:
+            scene.cycles.denoiser = "OPTIX" if denoiser == "optix" else "OPENIMAGEDENOISE"
+        except TypeError:
+            pass
+    return chosen
+
+
 def main() -> None:
     args = parse_args()
+    if args.samples is None:
+        args.samples = 128 if args.engine == "cycles" else 8
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
@@ -345,6 +407,8 @@ def main() -> None:
         scene.display.shading.color_type = "MATERIAL"
         scene.display.shading.show_shadows = True
         scene.display.shading.show_cavity = True
+    elif args.engine == "cycles":
+        configure_gpu(scene, args.samples, prefer=args.gpu_backend, denoiser=args.denoiser)
     else:
         # Blender 4.2-4.4 named the engine BLENDER_EEVEE_NEXT; 5.0 renamed it back to
         # BLENDER_EEVEE. Pick whichever the running Blender actually exposes.
@@ -367,6 +431,11 @@ def main() -> None:
     scene.render.image_settings.file_format = "PNG"
     scene.render.filepath = str(outdir / "protogon-loop-poster.png")
     bpy.ops.render.render(write_still=True)
+
+    if args.poster_only:
+        print(f"poster-only: wrote {outdir / 'protogon-loop-poster.png'}; "
+              "skipping loop/MP4/GIF/contact.")
+        return
 
     if shutil.which("ffmpeg") is None:
         print("WARNING: ffmpeg not found; rendered the poster only, skipping "

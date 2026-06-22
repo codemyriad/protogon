@@ -72,6 +72,37 @@ re-encoding the GIF at a frame rate that is not an integer divisor of the source
 fps (e.g. 18 fps from a 24 fps source), which drops frames unevenly and reintroduces
 a periodic stutter.
 
+### Accurate GPU renders (Cycles)
+
+For photoreal stills and loops, render with **Cycles path tracing** instead of the
+default EEVEE rasterizer:
+
+```
+blender -b -P ../tools/render_protogon_blender.py -- --engine cycles \
+  --model renders/model/codemyriad-protogon.glb --outdir renders/blender \
+  --top-texture renders/texture/top-surface-clean.png \
+  --bottom-texture renders/texture/bottom-surface-clean.png
+```
+
+`--engine cycles` path-traces on the GPU (OptiX on NVIDIA, auto-falling back to
+CUDA, then CPU) and denoises with **OpenImageDenoise** by default. The OptiX
+*denoiser* fails to initialise on some driver/GPU combinations (observed on an
+RTX 5060 / Blackwell with Blender 4.5), so OIDN is the default — path tracing
+still runs on the GPU. Useful flags: `--poster-only` (fast single-frame preview),
+`--samples N` (quality vs. speed, default 128 for Cycles), `--gpu-backend`,
+`--denoiser`.
+
+To render on a remote GPU box and pull the finished poster/MP4/GIF/contact sheet
+back into the repo in one step:
+
+```
+tools/render-on-roy.sh                 # defaults to host roy.wye.it
+SAMPLES=256 tools/render-on-roy.sh myhost
+```
+
+On an RTX 5060 a 1280×720 / 128-spp poster renders in ~4 s; a full 96-frame loop
+is roughly a 6-minute GPU job.
+
 ## Notes
 
 The project includes local footprint libraries copied into this folder so KiCad can run DRC without depending on a global KiCad library setup.
