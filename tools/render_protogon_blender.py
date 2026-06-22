@@ -40,6 +40,9 @@ def parse_args() -> argparse.Namespace:
                              "Blackwell + Blender 4.5). Path tracing still runs on the GPU.")
     parser.add_argument("--poster-only", action="store_true",
                         help="render only the still poster (fast preview), skip the loop/MP4/GIF")
+    parser.add_argument("--xray", action="store_true",
+                        help="make the soldermask translucent so the copper routing/traces "
+                             "show through -- a design-inspection view, not a product shot")
     parser.add_argument("--top-texture")
     parser.add_argument("--bottom-texture")
     # GIF/contact-sheet deliverables are derived from the rendered MP4 (needs ffmpeg).
@@ -74,7 +77,8 @@ def scene_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
 
 
 def material(name: str, color: tuple[float, float, float, float],
-             metallic: float = 0.0, roughness: float = 0.45) -> bpy.types.Material:
+             metallic: float = 0.0, roughness: float = 0.45,
+             alpha: float = 1.0) -> bpy.types.Material:
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = color
     mat.use_nodes = True
@@ -83,13 +87,20 @@ def material(name: str, color: tuple[float, float, float, float],
         bsdf.inputs["Base Color"].default_value = color
         bsdf.inputs["Metallic"].default_value = metallic
         bsdf.inputs["Roughness"].default_value = roughness
+        if "Alpha" in bsdf.inputs:
+            bsdf.inputs["Alpha"].default_value = alpha
     return mat
 
 
-def apply_board_materials(objects: list[bpy.types.Object]) -> None:
+def apply_board_materials(objects: list[bpy.types.Object], xray: bool = False) -> None:
+    # On a real black-soldermask board the copper traces are buried under the mask and
+    # are not visible -- only the exposed gold pads and white silk show. `xray` makes the
+    # soldermask translucent so the copper routing (the J1->J2 breakout traces) is visible:
+    # a design-inspection view, NOT a truthful product shot.
     mats = {
         # Black soldermask: near-black but not a void, semi-gloss so it catches a highlight.
-        "mask": material("black soldermask", (0.017, 0.017, 0.020, 1.0), roughness=0.45),
+        "mask": material("black soldermask", (0.017, 0.017, 0.020, 1.0), roughness=0.45,
+                         alpha=(0.15 if xray else 1.0)),
         # FR4 substrate seen at the board edge / inside holes: warm dark tan.
         "fr4": material("FR4 edge", (0.028, 0.024, 0.018, 1.0), roughness=0.7),
         # ENIG: a real metal (metallic 1.0), warm satin gold -- this is what makes the
@@ -336,7 +347,7 @@ def main() -> None:
 
     bpy.ops.import_scene.gltf(filepath=args.model)
     imported = list(bpy.context.scene.objects)
-    apply_board_materials(imported)
+    apply_board_materials(imported, xray=args.xray)
     lo, hi = scene_bounds(imported)
     center = (lo + hi) * 0.5
     size = hi - lo
