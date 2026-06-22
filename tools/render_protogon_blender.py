@@ -85,10 +85,14 @@ def material(name: str, color: tuple[float, float, float, float],
 
 def apply_board_materials(objects: list[bpy.types.Object]) -> None:
     mats = {
-        "mask": material("black soldermask", (0.012, 0.012, 0.014, 1.0), roughness=0.62),
-        "fr4": material("dark board edge", (0.022, 0.024, 0.026, 1.0), roughness=0.7),
-        "gold": material("ENIG gold", (1.0, 0.63, 0.045, 1.0), metallic=0.55, roughness=0.24),
-        "silk": material("white silkscreen", (0.92, 0.92, 0.88, 1.0), roughness=0.55),
+        # Black soldermask: near-black but not a void, semi-gloss so it catches a highlight.
+        "mask": material("black soldermask", (0.017, 0.017, 0.020, 1.0), roughness=0.45),
+        # FR4 substrate seen at the board edge / inside holes: warm dark tan.
+        "fr4": material("FR4 edge", (0.028, 0.024, 0.018, 1.0), roughness=0.7),
+        # ENIG: a real metal (metallic 1.0), warm satin gold -- this is what makes the
+        # finish read as gold instead of flat yellow.
+        "gold": material("ENIG gold", (0.86, 0.62, 0.21, 1.0), metallic=1.0, roughness=0.30),
+        "silk": material("white silkscreen", (0.90, 0.90, 0.87, 1.0), roughness=0.6),
     }
     for obj in objects:
         if obj.type != "MESH":
@@ -384,21 +388,33 @@ def main() -> None:
     look_at(camera, Vector((0, 0, 0)))
     bpy.context.scene.camera = camera
 
-    key = bpy.data.objects.new("Key", bpy.data.lights.new("Key", "AREA"))
-    bpy.context.collection.objects.link(key)
-    key.location = Vector((-max_dim * 0.8, -max_dim * 1.6, max_dim * 1.1))
-    key.data.energy = 550
-    key.data.size = max_dim * 1.2
+    # Lighting: SUN lamps, because a sun's irradiance is independent of distance --
+    # and therefore independent of the model's import scale (mm-as-units vs metres),
+    # which an area light's wattage is NOT. Three suns (key / fill / rim) give the
+    # ENIG gold a soft directional gleam and separate the board from the backdrop.
+    # `angle` softens the shadow edges. look_at() aims each sun's -Z at the origin.
+    def add_sun(name: str, location: Vector, strength: float, angle: float) -> bpy.types.Object:
+        sun = bpy.data.objects.new(name, bpy.data.lights.new(name, "SUN"))
+        bpy.context.collection.objects.link(sun)
+        sun.location = location
+        look_at(sun, Vector((0, 0, 0)))
+        sun.data.energy = strength
+        sun.data.angle = angle
+        return sun
 
-    fill = bpy.data.objects.new("Fill", bpy.data.lights.new("Fill", "AREA"))
-    bpy.context.collection.objects.link(fill)
-    fill.location = Vector((max_dim * 1.1, -max_dim * 1.0, max_dim * 0.5))
-    fill.data.energy = 130
-    fill.data.size = max_dim * 1.5
+    add_sun("Key",  Vector((-max_dim * 1.0, -max_dim * 1.2, max_dim * 1.5)), 4.0, 0.09)
+    add_sun("Fill", Vector(( max_dim * 1.4, -max_dim * 0.6, max_dim * 0.4)), 1.3, 0.15)
+    add_sun("Rim",  Vector(( max_dim * 0.2,  max_dim * 1.4, max_dim * 1.0)), 4.0, 0.05)
 
+    # World: a soft neutral environment for ambient fill plus a calm dark-grey backdrop
+    # so the lit board pops. Scene worlds use nodes by default, so drive the Background.
     world = bpy.context.scene.world or bpy.data.worlds.new("World")
     bpy.context.scene.world = world
-    world.color = (0.015, 0.017, 0.019)
+    world.use_nodes = True
+    background = world.node_tree.nodes.get("Background")
+    if background is not None:
+        background.inputs["Color"].default_value = (0.09, 0.09, 0.11, 1.0)
+        background.inputs["Strength"].default_value = 1.0
 
     scene = bpy.context.scene
     if args.engine == "workbench":
