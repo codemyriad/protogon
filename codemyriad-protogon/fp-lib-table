@@ -1,0 +1,6 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "tildagon")(type "KiCad")(uri "${KIPRJMOD}/tildagon.pretty")(options "")(descr ""))
+  (lib (name "MountingHole")(type "KiCad")(uri "${KIPRJMOD}/MountingHole.pretty")(options "")(descr ""))
+  (lib (name "Connector_PinHeader_2.54mm")(type "KiCad")(uri "${KIPRJMOD}/Connector_PinHeader_2.54mm.pretty")(options "")(descr ""))
+)
