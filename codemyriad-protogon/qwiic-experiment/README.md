@@ -40,6 +40,10 @@ The outline and the edge connector come from EMF's official
 (CERN-OHL-P-2.0). The firmware behaviour I'm relying on (the `0x50` EEPROM scan and the
 install path) is in [badge-2024-software](https://github.com/emfcamp/badge-2024-software).
 
+New to the Tildagon and hexpansions? I collected the spec and the primary sources (the
+edge-connector pinout, the mechanical rules, the I²C and EEPROM mechanism, and the gotchas
+other designers hit) into a short [background primer](BACKGROUND.md).
+
 ## What's a real choice and what isn't
 
 This is the most important section, so I'll be blunt about it. Almost everything in the
@@ -121,8 +125,10 @@ Roughly in the order I care about:
   the source of truth and hand-maintain the parts list). Your call which.
 - [ ] Confirm it fits. There's a [1:1 paper template](../official-hexpansion-paper-template.svg)
   in the repo; the real test is registering it (or the board) on a real badge and checking
-  the body and the connector ear against the slot and a neighbour. This is the gate I can't
-  close from a screen.
+  the body and the connector ear against the slot and a neighbour. Watch height too: a
+  vertical Qwiic socket is about 8 mm and the template has a ~7 mm height-restricted interior
+  zone, which is why the connector sits out on the edge. This is the gate I can't close from
+  a screen.
 - [ ] Keep it cheap. Prefer parts and a process that suit a small giveaway run. If
   machine-assembling these particular parts isn't worth it at low volume (the connector may
   need an assembly fixture, and a couple of parts aren't in the cheap basic library), tell
@@ -197,16 +203,19 @@ Done, the way I'd phrase it:
 
 ## Fab spec
 
-These are the current settings. The black soldermask is a real choice; "cheap" is what
-drives the rest, so revisit anything here if there's a cheaper or better call.
+Two of these aren't mine to trade away: the board **must be 1.0 mm thick and ENIG-finished**,
+because the board edge itself is the connector (gold card-edge fingers), and HASL or a 1.6 mm
+board won't seat or make contact. Black soldermask is my aesthetic choice. The rest follows
+from "cheap", so revisit it if there's a better call. The why (and the spec) are in the
+[background primer](BACKGROUND.md).
 
 | Item | Value |
 |---|---|
 | Layers | 2 |
-| Thickness | 1.0 mm |
+| Thickness | 1.0 mm (required by the hexpansion standard) |
 | Material | FR4 |
 | Copper | 1 oz |
-| Finish | ENIG |
+| Finish | ENIG (required: the edge fingers are the contact surface) |
 | Soldermask | **black** |
 | Silkscreen | white |
 | Edge bevel | none (not a considered choice) |
