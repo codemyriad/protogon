@@ -1,0 +1,12 @@
+Ref,Qty,Value,Footprint,MPN,Manufacturer,LCSC,JLCPCB_Library,Assembly,Notes
+U1,1,CAT24C512 (512 kbit I2C EEPROM),SOIC-8 3.9x4.9mm P1.27mm,CAT24C512WI-GT3,onsemi,C79986,Extended,SMT-top,"Pinout datasheet-verified: 1/2/3=A0/A1/A2->GND => addr 0x50; 4=VSS; 5=SDA; 6=SCL; 7=WP->GND => write-enabled; 8=VCC=3V3. Firmware-confirmed largest supported single chip (16-bit word addressing)."
+R1,1,10k,R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,0603WAF1002T5E,Uniroyal,C25804,Basic,SMT-top,SDA->3V3 pull-up
+R2,1,10k,R_0603_1608Metric_Pad0.98x0.95mm_HandSolder,0603WAF1002T5E,Uniroyal,C25804,Basic,SMT-top,"SCL->3V3 pull-up; order R1+R2 as one line, qty 2"
+C1,1,100n,C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,CC0603KRX7R9BB104,Yageo,C14663,Basic,SMT-top,"VCC-GND decoupling at U1; X7R 50V"
+J3,1,Qwiic / STEMMA-QT JST-SH 4-pin,JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal,SM04B-SRSS-TB(LF)(SN),JST,C160404,Extended,SMT-top,"Confirmed side-entry SMD = the standard Qwiic mate (NOT vertical, NOT THT). JLCPCB flags 'assembly fixture needed'."
+J2,1,Header 2x10 2.54mm,PinHeader_2x10_P2.54mm_Vertical,(generic 2.54mm 2x10),-,-,-,THT / hand-solder,Hexpansion breakout header (user-supplied; exclude from SMT placement)
+"H1,H2",2,M2 mounting hole,MountingHole_2.2mm_M2_Pad_Via,-,-,-,-,Mechanical,Netless (not GND-tied) — intentional/inherited
+J1,1,Hexpansion edge connector,tildagon:hexpansion-edge-connector,(PCB gold fingers),-,-,-,PCB,Part of the board outline; not a placed component
+# Alternates: U1 -> Microchip AT24C512C-SSHD-T (C12371, SOIC-8 true drop-in) or ST M24512-RMN6TP. Smaller-density SOIC/SOP-8: Zetta ZD24C64A-SSGMB (C2837682).
+# WARNING: the README's "ZD24C64A-XGMT" alt is TSSOP-8 (0.65mm pitch) and does NOT fit U1's SOIC-8 pads. Use ZD24C64A-SSGMB instead.
+# J3 clones (verify side-entry SMD before swapping): generic SH1.0-4P horizontal SMD. Genuine JST is the safe choice for mating reliability.
