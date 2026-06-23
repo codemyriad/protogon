@@ -10,9 +10,8 @@ on a batch (some to give away at a hacker camp), I want a human to confirm the b
 the parts will actually work, to fix the parts that won't, and to hand it back ready to
 order.
 
-So this is a brief, not a spec. I'm telling you what the thing is and what I actually
-care about. Most of the design decisions in the file are not decisions, and you should
-feel free to redo them (see ["what's a real choice and what isn't"](#whats-a-real-choice-and-what-isnt)).
+So this is a brief, not a spec. Most of the design decisions in the file are not
+decisions, and you should feel free to redo them (see ["what's a real choice and what isn't"](#whats-a-real-choice-and-what-isnt)).
 
 ## What it is
 
@@ -80,22 +79,16 @@ preserve it out of politeness. None of it was a considered call.
 
 The outline came out of a Python script driving KiCad; the routing and the EEPROM block
 were placed by the LLM. I then had other LLMs review it, and that review is in the two
-appendix files below. It's useful, but it's still machine-generated. As far as I'm aware
-you'd be the first human who builds boards to look at this.
+appendix files below. It's useful, but it's still machine-generated.
 
 So treat every "it's fine" and "verified" in this repo as unconfirmed. A few specific
 things I already suspect are wrong (I'm not the expert, so please use your own judgement):
 
 * **The EEPROM placement, which is the one that bothers me most.** `U1`/`R1`/`R2`/`C1`
-  sit in the dead centre of the proto grid. The old notes claimed "the full 10×14 grid is
-  intact, no proto holes sacrificed." That isn't true: the plain protoboard has 140 proto
-  holes, this one has 124. Sixteen holes (a 4×4 block) were deleted to fit the chip, right
-  in the middle of the field. So a bare board isn't even a clean protoboard today, and a
-  populated one looks like a chip got wedged between perfboard holes.
+  sit in the dead centre of the proto grid, eating into the holes and silk.
 * **DRC is "clean" against a ruleset with most minimums set to 0.** Run it under a real
-  fab profile and it isn't. A review pass under a JLCPCB-ish profile turned up roughly two
-  dozen violations (hole-to-hole spacing on the mounting holes, copper-to-edge on the
-  Qwiic connector pads, zero soldermask expansion everywhere).
+  fab profile and it isn't (a review pass under a JLCPCB-ish profile turned up a couple
+  dozen violations).
 * **The bus is routed (12 vias, KiCad reports 0 unconnected), but that only means the
   ratsnest is happy.** It doesn't prove the copper truly connects through every layer
   change, and nobody has confirmed the vias land sensibly (and not inside a proto hole).
