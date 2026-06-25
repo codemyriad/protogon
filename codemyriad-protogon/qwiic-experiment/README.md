@@ -1,10 +1,14 @@
 # Protogon Qwiic + EEPROM hexpansion
 
-A small 2-layer KiCad board for review and finalisation. It's a [Tildagon](https://tildagon.badge.emfcamp.org/) [hexpansion](https://tildagon.badge.emfcamp.org/hexpansions/) — an add-on for the EMF 2024 badge — that combines a prototyping grid with an optional I²C identification EEPROM and a Qwiic/STEMMA QT connector.
+**The job in 60 seconds**
 
-The layout was produced with an LLM and has never been reviewed by a human PCB designer. You're being hired to be the first. Treat the file as a starting point, not a spec: most "decisions" in it aren't. **The main task is the LLM's two worst mistakes:** it bolted a Qwiic connector onto a clumsy "ear" sticking off the rim, and it dumped the EEPROM + pull-ups + decoupling cap in the dead centre of the prototyping grid, eating holes and silk. Placing these well — ear and connector out of the way, EEPROM block grouped cleanly so the bare board is a full grid again — is the core of what I'm asking for. Everything else flows from that.
-
-**Where to start:** this directory holds the bad LLM attempt — do **not** work from it. One level up, [`../codemyriad-protogon.kicad_pcb`](../codemyriad-protogon.kicad_pcb) is the base board I trust: the proven hexpansion outline, edge connector, proto grid and breakout header, with no SMD parts. Start from that file and add the I²C block (`U1` EEPROM, `R1`/`R2` pull-ups, `C1` decoupling, `J3` Qwiic) properly, rather than fixing the LLM's placement.
+- **What:** review and finalise a small 2-layer KiCad [hexpansion](https://tildagon.badge.emfcamp.org/hexpansions/) — an add-on for the EMF [Tildagon](https://tildagon.badge.emfcamp.org/) badge that pairs a prototyping grid with an optional I²C identification EEPROM and a Qwiic/STEMMA QT connector. An LLM laid it out and no human PCB designer has ever checked it; you're being hired to be the first.
+- **The core task is two bad placement calls the LLM made:** it bolted the Qwiic connector onto a clumsy "ear" off the rim, and dumped the EEPROM + pull-ups + decoupling cap in the dead centre of the proto grid, eating holes and silk. Place that block (`U1` EEPROM, `R1`/`R2` pull-ups, `C1` cap, `J3` Qwiic) *properly* — grouped and out of the way so a bare board is a full, clean grid again — route the I²C bus in real copper, and finalise the layout. Everything else flows from that.
+- **Start from the base board, not this folder.** The board in *this* folder is the bad LLM attempt — reference only, **do not work from it**. Work from [`../codemyriad-protogon.kicad_pcb`](../codemyriad-protogon.kicad_pcb), the base board I trust (proven outline, edge connector, proto grid, breakout header; no SMD parts), and add the I²C block to it.
+- **You need** KiCad fluency, real DFM judgement, and experience with card-edge / gold-finger connectors. **You don't need an EMF badge** — you validate fit on a printed 1:1 template; I do the final on-badge check.
+- **Effort:** small and well-scoped — a few focused days, but correct me if that's off. I want someone who'll push back where I'm wrong as much as someone who lays out copper.
+- **Hand back** one order-ready design that builds bare or fully populated — gerbers, drill, STEP, BOM, placement, DRC, fab spec (full list below).
+- **How to bid:** price the full order-ready package, give a rough timeline, and flag anything in Scope you'd treat as separate. Budget/engagement details are on the Upwork post.
 
 If you don't know Tildagon hexpansions, the load-bearing facts (pinout, mechanical limits, I²C/EEPROM mechanism, fab gotchas) are collected in [BACKGROUND.md](BACKGROUND.md), with primary sources linked at the bottom. The two short references that matter most:
 
@@ -19,7 +23,7 @@ If you don't know Tildagon hexpansions, the load-bearing facts (pinout, mechanic
 - **Black soldermask, white silk.** Aesthetic choice — some boards go out bare, so a bare board should look finished.
 - **The SMD block is optional.** `U1` (CAT24C512 EEPROM), `R1`/`R2` (I²C pull-ups), `C1` (decoupling), `J3` (Qwiic) are the only SMD parts and must be one cleanly-grouped, omittable block. A bare board (none fitted) must be a complete, usable, good-looking protoboard. Pull-ups belong with the EEPROM, not on the base board.
 - **The Code Myriad logo stays** (it's fine if hidden once seated).
-- **Fits a real 2024 badge** — tab seats, ear clears a neighbour, cable exits outward.
+- **Seats on a 2024 badge** — the geometry must let the tab seat, the ear clear a neighbour, and the cable exit outward.
 
 | Item | Value |
 |---|---|
@@ -36,10 +40,11 @@ If you don't know Tildagon hexpansions, the load-bearing facts (pinout, mechanic
 
 ## State of the two boards
 
-- **Base board** ([`../codemyriad-protogon.kicad_pcb`](../codemyriad-protogon.kicad_pcb)) — the one to work from. Proven outline, edge connector, proto grid, breakout header. No SMD parts. Never independently fit-checked on real hardware, but it's the trusted starting point.
-- **This folder's board** (`codemyriad-protogon-qwiic.kicad_pcb`) — the bad LLM attempt. Reference only; don't build on it. The schematic here is stale too (still carries the upstream template's LED/jumper/third resistor, missing the I²C parts), so a schematic-generated BOM is wrong. Trust the BOM CSV in this folder over it.
-- DRC on the LLM board is "clean" only because `.kicad_pro` has most minimums zeroed; under a realistic fab profile it isn't. Re-run against your fab's real capability.
-- Never test-fitted on real hardware. Whether the +6 mm ear clears a populated neighbour is unverified.
+Which board is which is in the 60-second block above; the caveats that aren't:
+
+- **This folder's board** (`codemyriad-protogon-qwiic.kicad_pcb`) is the LLM attempt — reference only. Its schematic is stale (still carries the upstream template's LED/jumper/third resistor, missing the I²C parts), so a schematic-generated BOM is wrong — trust [the BOM CSV](codemyriad-protogon-qwiic-bom.csv) over it.
+- DRC on it is "clean" only because `.kicad_pro` has most minimums zeroed; under a realistic fab profile it isn't. Re-run against your fab's real capability.
+- **Neither board has been test-fitted on real hardware** — whether the +6 mm ear clears a populated neighbour is unverified (that's the on-badge check I run on your output).
 - The EEPROM/firmware premise *is* verified against `badge-2024-software`: a CAT24C512 at `0x50` gets full 16-bit addressing and works through the identify/install path. See [DERISK-FINDINGS.md](DERISK-FINDINGS.md).
 
 The detailed (AI-written) review with coordinates and suggested fixes is in [REVIEW-HANDOFF.md](REVIEW-HANDOFF.md). Treat its suggestions as one non-expert opinion, not instructions.
@@ -49,16 +54,18 @@ The detailed (AI-written) review with coordinates and suggested fixes is in [REV
 **Must-have**
 
 - [ ] Add the I²C block (`U1`, `R1`/`R2`, `C1`, `J3`) to the base board with clean placement: a grouped, omittable block that keeps the bare board a full, clean grid. Ear and connector out of the way. Placement is your call.
-- [ ] Route the I²C + power bus genuinely in copper to every pad; pass DRC under the real fab profile (not the zeroed rules). Watch vias landing in proto holes.
+- [ ] Route the I²C + power bus genuinely in copper to every pad; pass DRC under JLCPCB's real capability profile (I plan to order there — not the zeroed rules). Watch vias landing in proto holes.
 - [ ] Reconcile schematic and PCB — either ERC-clean, or formally make the PCB the source of truth and hand-maintain the parts list. Record the decision.
-- [ ] Confirm fit on a real 2024 badge (see fit check below). Watch height: a vertical Qwiic socket is ~8 mm vs a ~7 mm height-restricted interior zone — that's why `J3` sits on the ear.
-- [ ] Keep it cheap for a small giveaway run. If machine assembly isn't worth it at low volume (`J3` may need a fixture; `U1`/`J3` are JLCPCB Extended), say so and recommend an alternative.
+- [ ] Confirm fit on the 1:1 paper template (see fit check below). Watch height: the interior has a ~7 mm height-restricted zone — a vertical Qwiic socket (~8 mm) wouldn't clear it, which is why `J3` is a side-entry part on the ear with the cable exiting outward.
+- [ ] Build for hand assembly — I order bare boards and hand-solder the parts (no machine assembly), so hand-solderable land patterns matter. Flag anything genuinely hard to hand-solder (the `J3` JST-SH connector is the prime suspect) and suggest a friendlier option if you have one.
+
+**How I order:** bare boards from [JLCPCB](https://jlcpcb.com/) (1 mm FR4, ENIG) and parts from LCSC/Mouser, hand-soldered — no machine assembly. **Bonus points if you help me place the order:** JLCPCB-ready gerbers + the exact board options to pick, and a parts cart I can check out.
 
 **Your judgement — I have none here**
 
 - [ ] Pull-ups are 10 k (an LLM typed it). Size them for the real bus capacitance at 400 kHz, or tell me 10 k is right and why.
 - [ ] `WP` is tied to GND (always writable, which the badge needs to provision). A solder-jumper to protect the ID block afterwards is cheap if you think it's worth it.
-- [ ] Profile, ear, silk, mounting holes, panelisation for the odd outline, edge-finger lead-in, fiducials, test points, revision marker — anything a turnkey assembler will want.
+- [ ] Profile, ear, silk, mounting holes, panelisation + self-depanel for the odd outline, edge-finger lead-in, revision marker — anything that makes a clean bare board and an easy hand-build.
 
 If you think the approach itself is wrong (no ear, no on-board EEPROM, four layers, …), say so. That's the point of hiring you.
 
@@ -68,25 +75,27 @@ Order-ready package, one design giving both a bare and a populated build:
 
 - updated KiCad project (PCB, schematic, project file), built from the base board with the I²C block added
 - gerbers (explicit layer list, not saved plot params), drill + map, STEP
-- a short fab/order spec flagging the profile is to be routed exactly as drawn (mouth + ear intentional)
-- BOM + placement for the populated build with real MPNs (the [current BOM](codemyriad-protogon-qwiic-bom.csv) is a starting point — trust it over a schematic-generated one), plus the bare (omitted) variant
+- a short JLCPCB fab/order spec (board options + the profile routed exactly as drawn — mouth + ear intentional)
+- BOM + a hand-build placement guide for the populated variant with real MPNs (the [current BOM](codemyriad-protogon-qwiic-bom.csv) is a starting point — trust it over a schematic-generated one), plus the bare (omitted) variant
 - fresh DRC report under the real ruleset, and an ERC-clean schematic (or a note that the PCB is source of truth)
-- the fit-check result (pass/fail, ideally a photo on a real badge)
+- the 1:1 paper fit-check result (pass/fail + a photo of the board print registered on the template); I handle the physical on-badge check
 
 Done:
 
 - [ ] DRC clean (0 errors, 0 unconnected) under the fab's real rules; copper continuity actually checked, not just the ratsnest
 - [ ] bus reaches every pad; EEPROM `0x50` + WP-GND real in copper
-- [ ] fits a real 2024 badge (tab seats, ear clears a neighbour, cable exits outward)
+- [ ] fit validated on the 1:1 paper template; geometry supports tab-seat, neighbour clearance and outward cable exit (final on-badge check is mine)
 - [ ] schematic ↔ PCB reconciled, decision recorded
 - [ ] fresh fab outputs, timestamped after the final board save, in both variants
 
 ## Fit check
 
-The on-screen envelope check is inconclusive — the decisive test is physical. Print [`../official-hexpansion-paper-template.svg`](../official-hexpansion-paper-template.svg) (or [the upstream original](https://raw.githubusercontent.com/emfcamp/badge-2024-hardware/main/hexpansion/hexpansion_paper_template.svg)) at **1:1**, register the board on the edge connector, and confirm:
+The on-screen envelope check is inconclusive, so the paper template is the test. Print [`../official-hexpansion-paper-template.svg`](../official-hexpansion-paper-template.svg) (or [the upstream original](https://raw.githubusercontent.com/emfcamp/badge-2024-hardware/main/hexpansion/hexpansion_paper_template.svg)) at **1:1**, register a 1:1 print of the board on the edge connector, and confirm:
 
 1. the hex body sits within the maroon **"template"** outline → validates the base design;
-2. the 6 mm ear stays within the light-blue **"hextended"** max envelope and clears a neighbour slot on a populated badge → validates the qwiic delta.
+2. the 6 mm ear stays within the light-blue **"hextended"** max envelope (the envelope that governs neighbour-slot clearance) → validates the qwiic delta.
+
+Send me that result; I'll confirm the physical seat and neighbour clearance on a populated badge.
 
 <p align="center">
   <img src="../official-hexpansion-paper-template.svg" width="320" alt="Official 1:1 hexpansion paper fit template (EMF badge-2024-hardware)">
@@ -94,6 +103,8 @@ The on-screen envelope check is inconclusive — the decisive test is physical. 
 </p>
 
 ## Files in this folder
+
+**Start file is in the parent folder:** [`../codemyriad-protogon.kicad_pcb`](../codemyriad-protogon.kicad_pcb) — the trusted base board you build on. Everything listed below is in *this* folder and is **reference only** (the LLM attempt + notes).
 
 | File | Notes |
 |---|---|
