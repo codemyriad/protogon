@@ -2,7 +2,9 @@
 
 A small 2-layer KiCad board for review and finalisation. It's a [Tildagon](https://tildagon.badge.emfcamp.org/) [hexpansion](https://tildagon.badge.emfcamp.org/hexpansions/) — an add-on for the EMF 2024 badge — that combines a prototyping grid with an optional I²C identification EEPROM and a Qwiic/STEMMA QT connector.
 
-The layout was produced with an LLM and has never been reviewed by a human PCB designer. You're being hired to be the first. Treat the file as a starting point, not a spec: most "decisions" in it aren't.
+The layout was produced with an LLM and has never been reviewed by a human PCB designer. You're being hired to be the first. Treat the file as a starting point, not a spec: most "decisions" in it aren't. **The main task is the LLM's two worst mistakes:** it bolted a Qwiic connector onto a clumsy "ear" sticking off the rim, and it dumped the EEPROM + pull-ups + decoupling cap in the dead centre of the prototyping grid, eating holes and silk. Placing these well — ear and connector out of the way, EEPROM block grouped cleanly so the bare board is a full grid again — is the core of what I'm asking for. Everything else flows from that.
+
+**Where to start:** this directory holds the bad LLM attempt — do **not** work from it. One level up, [`../codemyriad-protogon.kicad_pcb`](../codemyriad-protogon.kicad_pcb) is the base board I trust: the proven hexpansion outline, edge connector, proto grid and breakout header, with no SMD parts. Start from that file and add the I²C block (`U1` EEPROM, `R1`/`R2` pull-ups, `C1` decoupling, `J3` Qwiic) properly, rather than fixing the LLM's placement.
 
 If you don't know Tildagon hexpansions, the load-bearing facts (pinout, mechanical limits, I²C/EEPROM mechanism, fab gotchas) are collected in [BACKGROUND.md](BACKGROUND.md), with primary sources linked at the bottom. The two short references that matter most:
 
@@ -32,24 +34,22 @@ If you don't know Tildagon hexpansions, the load-bearing facts (pinout, mechanic
 | Profile | route as drawn: the left connector "mouth" slot **and** the right "ear" are intentional; the fab must not close or "fix" them |
 | Size | ~56 × 37 mm (hex body ~48 × 37 mm + edge tongue + ~6 mm ear) |
 
-## Current state — verified, not assumed
+## State of the two boards
 
-- Outline copied from EMF's official template; routing and the EEPROM block placed by an LLM.
-- **PCB is the source of truth.** Schematic is stale — it still carries the upstream template's LED, jumper and third resistor, and is missing the new I²C parts. Do **not** run "update PCB from schematic" before reconciling.
-- DRC is "clean" only because `.kicad_pro` has most minimums zeroed; under a realistic fab profile it isn't. Re-run against your fab's real capability.
-- The I²C bus is routed (12 vias, 0 unconnected in the ratsnest) but copper continuity through the layer changes is unverified, and vias landing inside proto holes is a real risk to check.
-- **The EEPROM block (`U1`/`R1`/`R2`/`C1`) sits in the centre of the proto grid**, eating holes and silk. This is the main layout problem to fix.
-- Never test-fitted on real hardware. The +6 mm "ear" for `J3` is the only mechanical delta from the proven base outline; whether it clears a populated neighbour is unverified.
+- **Base board** ([`../codemyriad-protogon.kicad_pcb`](../codemyriad-protogon.kicad_pcb)) — the one to work from. Proven outline, edge connector, proto grid, breakout header. No SMD parts. Never independently fit-checked on real hardware, but it's the trusted starting point.
+- **This folder's board** (`codemyriad-protogon-qwiic.kicad_pcb`) — the bad LLM attempt. Reference only; don't build on it. The schematic here is stale too (still carries the upstream template's LED/jumper/third resistor, missing the I²C parts), so a schematic-generated BOM is wrong. Trust the BOM CSV in this folder over it.
+- DRC on the LLM board is "clean" only because `.kicad_pro` has most minimums zeroed; under a realistic fab profile it isn't. Re-run against your fab's real capability.
+- Never test-fitted on real hardware. Whether the +6 mm ear clears a populated neighbour is unverified.
 - The EEPROM/firmware premise *is* verified against `badge-2024-software`: a CAT24C512 at `0x50` gets full 16-bit addressing and works through the identify/install path. See [DERISK-FINDINGS.md](DERISK-FINDINGS.md).
 
-The detailed (AI-written) review with coordinates and suggested fixes is in [REVIEW-HANDOFF.md](REVIEW-HANDOFF.md). Treat its suggestions as one non-expert opinion, not instructions; where it disagrees with the board file, trust the file.
+The detailed (AI-written) review with coordinates and suggested fixes is in [REVIEW-HANDOFF.md](REVIEW-HANDOFF.md). Treat its suggestions as one non-expert opinion, not instructions.
 
 ## Scope
 
 **Must-have**
 
-- [ ] Move the EEPROM block out of the proto grid so the bare board is a clean, full grid and the populated block looks deliberate. Placement is your call.
-- [ ] Make the I²C bus genuinely connect in copper to every pad; pass DRC under the real fab profile (not the zeroed rules).
+- [ ] Add the I²C block (`U1`, `R1`/`R2`, `C1`, `J3`) to the base board with clean placement: a grouped, omittable block that keeps the bare board a full, clean grid. Ear and connector out of the way. Placement is your call.
+- [ ] Route the I²C + power bus genuinely in copper to every pad; pass DRC under the real fab profile (not the zeroed rules). Watch vias landing in proto holes.
 - [ ] Reconcile schematic and PCB — either ERC-clean, or formally make the PCB the source of truth and hand-maintain the parts list. Record the decision.
 - [ ] Confirm fit on a real 2024 badge (see fit check below). Watch height: a vertical Qwiic socket is ~8 mm vs a ~7 mm height-restricted interior zone — that's why `J3` sits on the ear.
 - [ ] Keep it cheap for a small giveaway run. If machine assembly isn't worth it at low volume (`J3` may need a fixture; `U1`/`J3` are JLCPCB Extended), say so and recommend an alternative.
@@ -66,7 +66,7 @@ If you think the approach itself is wrong (no ear, no on-board EEPROM, four laye
 
 Order-ready package, one design giving both a bare and a populated build:
 
-- updated KiCad project (PCB, schematic, project file) with the rework done
+- updated KiCad project (PCB, schematic, project file), built from the base board with the I²C block added
 - gerbers (explicit layer list, not saved plot params), drill + map, STEP
 - a short fab/order spec flagging the profile is to be routed exactly as drawn (mouth + ear intentional)
 - BOM + placement for the populated build with real MPNs (the [current BOM](codemyriad-protogon-qwiic-bom.csv) is a starting point — trust it over a schematic-generated one), plus the bare (omitted) variant
@@ -97,12 +97,12 @@ The on-screen envelope check is inconclusive — the decisive test is physical. 
 
 | File | Notes |
 |---|---|
-| `codemyriad-protogon-qwiic.kicad_pcb` | the board — **source of truth**. Footprints embedded; opens and DRCs without the libs. |
-| `codemyriad-protogon-qwiic.kicad_sch` | schematic — **stale**, reconcile before trusting. |
+| `codemyriad-protogon-qwiic.kicad_pcb` | the LLM's attempt — **reference only, don't build on it**. Footprints embedded; opens and DRCs without the libs. |
+| `codemyriad-protogon-qwiic.kicad_sch` | schematic — **stale**, don't trust a BOM from it. |
 | `codemyriad-protogon-qwiic.kicad_pro` | project + design rules. Minimums mostly zeroed; replace with the fab's profile. |
-| `codemyriad-protogon-qwiic-bom.csv` | hand-authored parts list with MPN + LCSC. Trust over a schematic-generated BOM. (Trap noted: an earlier "ZD24C64A-XGMT" alternate is TSSOP, not SOIC — don't order it.) |
+| `codemyriad-protogon-qwiic-bom.csv` | hand-authored parts list with MPN + LCSC. Trust this over any schematic-generated BOM. (Trap noted: an earlier "ZD24C64A-XGMT" alternate is TSSOP, not SOIC — don't order it.) |
 | `codemyriad-protogon-qwiic-preview.png`, `-routing.png` | top render + copper x-ray. |
 | `BACKGROUND.md` | Tildagon primer + primary sources. Read if hexpansions are new to you. |
 | `REVIEW-HANDOFF.md`, `DERISK-FINDINGS.md` | detailed (AI-written) review + de-risking notes. Depth, with caveats. |
 
-Footprint libraries (`*.pretty`) live one folder up at the repo root — harmless lib warnings; footprints are embedded. The base (non-Qwiic) protoboard this derives from is also one folder up, with its fab package in `../fabrication/` (gerbers + drill only, no assembly files) — a reasonable folder-structure template to hand back.
+Footprint libraries (`*.pretty`) live at the repo root — harmless lib warnings; footprints are embedded. The base board's fab package is in [`../fabrication/`](../fabrication/) (gerbers + drill only, no assembly files) — a reasonable folder-structure template to hand back.
