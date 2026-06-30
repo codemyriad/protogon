@@ -19,7 +19,7 @@ Protogon is a bare passive protoboard: no assembly, nothing to go wrong, cheap b
 
 ## The EEPROM and the Qwiic connector
 
-The badge reads a small I²C EEPROM to [identify a hexpansion and auto-install its app](https://tildagon.badge.emfcamp.org/hexpansions/eeprom/). Most quick hexpansions skip it (the address and write-protect are fiddly). Protogon has one: a 24-series EEPROM (U1, Zetta ZD24C64A, 64 kbit) at `0x50`, WP pulled low and broken out to the P1 header so the badge can provision it.
+The badge reads a small I²C EEPROM to [identify a hexpansion and auto-install its app](https://tildagon.badge.emfcamp.org/hexpansions/eeprom/). Most quick hexpansions skip it (the address and write-protect are fiddly). Protogon has one: a 24-series EEPROM (U1, Zetta ZD24C64A, 64 kbit) at `0x50`. WP is pulled low so the badge can provision it; short the P1 jumper afterward to write-protect the ID block.
 
 Next to it, a [Qwiic / STEMMA QT](https://learn.adafruit.com/introducing-adafruit-stemma-qt/what-is-stemma-qt) connector (U2, side-entry JST-SH). Qwiic is the 4-pin 1 mm I²C connector most hobbyist sensors already use, so a cable drops a sensor onto the badge's I²C bus with no soldering. The board carries the SDA/SCL pull-ups (4.7 kΩ); the badge has none.
 
