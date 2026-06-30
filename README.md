@@ -60,10 +60,6 @@ The order outputs live in [`fabrication/`](fabrication/): Gerbers and drill zipp
 
 Making the EEPROM actually identify your hexpansion is a firmware step, not a hardware one: point [`prepare_eeprom.py`](https://github.com/emfcamp/badge-2024-software/blob/main/modules/scripts/prepare_eeprom.py) at the right I²C port with a real VID/PID, write it once, and the badge picks it up on insert. The detection logic is in [`util.py`](https://github.com/emfcamp/badge-2024-software/blob/main/modules/system/hexpansion/util.py). I'd smoke-test a read and a write on a real badge before committing to a quantity. It's two minutes and it's the one thing the files can't prove for you.
 
-## Does it fit?
-
-The hexagon body is the proven outline straight from EMF's template, so that part is known good. The one thing I can't fully settle from the files is whether the Qwiic ear clears a neighbour in a fully-populated badge. The check is cheap: print [`official-hexpansion-paper-template.svg`](official-hexpansion-paper-template.svg) at 100%, lay a 1:1 print of the board on it registered on the edge connector, and confirm the body sits inside the "template" outline and the ear stays inside the "hextended" envelope. We do the final seat-and-clearance check on a real badge before ordering a batch.
-
 ## How this was made
 
 Honest provenance, because it should count for something on a board you're about to trust with your soldering iron: the first cut was laid out by an LLM, the naive way, and it showed (the Qwiic connector bolted onto an awkward tab, the EEPROM dumped in the middle of the grid eating holes and silk). A human PCB designer then redid the placement, routed the I²C bus properly in copper, sized the pull-ups, brought the write-protect out to a jumper, and got DRC down to no errors and no unconnected pads. The board here is the human's work. The earlier protoboard-only prototype, and the Blender render pipeline we used before switching to KiCad's own renders, are kept in [`archive/`](archive/) rather than deleted.
