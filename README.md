@@ -60,7 +60,7 @@ Getting the badge to identify your board is firmware, not hardware: point [`prep
 
 ## How this was made
 
-The first cut was laid out by an LLM, and it showed: the Qwiic connector bolted onto an awkward tab, the EEPROM dumped mid-grid eating holes and silk. A human PCB designer redid the placement, routed the I²C bus in copper, sized the pull-ups, brought WP out to a jumper, and got DRC to zero errors and zero unconnected. That's the board here. The bare-protoboard prototype and the old Blender render pipeline are kept in [`archive/`](archive/).
+The first cut was laid out by an LLM, and it showed: the Qwiic connector bolted onto an awkward tab, the EEPROM dumped mid-grid eating holes and silk. A human PCB designer redid the placement, routed the I²C bus in copper, sized the pull-ups, brought WP out to a jumper, and got DRC to zero errors and zero unconnected. That's the board here.
 
 ## What's in here
 
