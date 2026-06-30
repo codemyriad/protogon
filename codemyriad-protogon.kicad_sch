@@ -2455,7 +2455,7 @@
 	)
 	(text "DET tied to GND\n"
 		(exclude_from_sim no)
-		(at 110.49 101.854 0)
+		(at 110.236 106.68 0)
 		(effects
 			(font
 				(size 2.54 2.54)
@@ -2992,7 +2992,7 @@
 	)
 	(wire
 		(pts
-			(xy 109.22 97.79) (xy 116.84 97.79)
+			(xy 109.22 97.79) (xy 118.11 97.79)
 		)
 		(stroke
 			(width 0)
@@ -3410,16 +3410,6 @@
 			(justify left bottom)
 		)
 		(uuid "258f1afa-3333-48da-b23b-ac468418fefa")
-	)
-	(label "GND"
-		(at 116.84 97.79 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "25a7d74f-64cb-4a0d-8e32-bb407e589e70")
 	)
 	(label "SCL"
 		(at 52.07 64.77 180)
@@ -4974,6 +4964,71 @@
 			(project "hexpansion"
 				(path "/fb9bfa6e-c44d-469c-aa90-8ec28bcdf17f"
 					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 118.11 97.79 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "878c6367-f553-47c5-ac62-6b126393e495")
+		(property "Reference" "#PWR015"
+			(at 118.11 104.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 118.11 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 118.11 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 118.11 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 118.11 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "40c34688-a1b3-4678-b26a-d829a5761af6")
+		)
+		(instances
+			(project "codemyriad-protogon"
+				(path "/fb9bfa6e-c44d-469c-aa90-8ec28bcdf17f"
+					(reference "#PWR015")
 					(unit 1)
 				)
 			)
