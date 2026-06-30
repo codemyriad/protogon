@@ -1,0 +1,7 @@
+Designator,Description,Footprint,Qty_per_board,Qty_needed_exact,Qty_to_order_with_spares,LCSC_Part,Manufacturer_Part,Manufacturer
+C1,100nF (0.1uF) 50V X7R ceramic capacitor,0603,1,300,400,C1591,CL10B104KB8NNNC,Samsung Electro-Mechanics
+D1,LED,0805,1,300,400,C19171391,,(generic - match to LCSC C19171391)
+R1,402 ohm 1% resistor,0603,1,300,400,C2930100,FRC0603F4020TS,FOJAN
+"R2,R3,R4",4.7k (4K7) 5% resistor,0603,3,900,1000,C105428,RC0603JR-074K7L,YAGEO
+U1,EEPROM 64Kbit I2C,TSSOP-8,1,300,330,C2875852,ZD24C64A-XGMT,Zetta
+U2,JST-SH 4-pin right-angle SMD connector (on 100 boards only),SM04B,1,100,120,C160404,SM04B-SRSS-TB(LF)(SN),JST

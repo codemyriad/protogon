@@ -1,0 +1,38 @@
+** Drc report for codemyriad-protogon.kicad_pcb **
+** Created on 2026-06-30T10:05:16+0200 **
+** Report includes: Errors, Warnings **
+
+** Found 9 DRC violations **
+[lib_footprint_mismatch]: Footprint 'C_0603_1608Metric_Pad1.08x0.95mm_HandSolder' does not match copy in library 'Capacitor_SMD'.
+    Local override; warning
+    @(149.2600 mm, 85.7000 mm): Footprint C1
+[lib_footprint_mismatch]: Footprint 'R_0603_1608Metric' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(118.2500 mm, 83.2200 mm): Footprint R1
+[lib_footprint_mismatch]: Footprint 'HDR-TH_2P-P2.54-V-M' does not match copy in library 'footprint'.
+    Local override; warning
+    @(151.1600 mm, 96.8900 mm): Footprint P1
+[lib_footprint_mismatch]: Footprint 'R_0603_1608Metric_Pad0.98x0.95mm_HandSolder' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(153.2300 mm, 90.8600 mm): Footprint R4
+[lib_footprint_mismatch]: Footprint 'CONN-SMD_4P-P1.00_SM04B-SRSS-TB-LF-SN' does not match copy in library 'footprint'.
+    Local override; warning
+    @(151.0575 mm, 103.5400 mm): Footprint U2
+[lib_footprint_mismatch]: Footprint 'TSSOP-8_L4.4-W3.0-P0.65-LS6.4-BL' does not match copy in library 'footprint'.
+    Local override; warning
+    @(148.8500 mm, 91.0300 mm): Footprint U1
+[lib_footprint_mismatch]: Footprint 'R_0603_1608Metric_Pad0.98x0.95mm_HandSolder' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(147.0000 mm, 96.8400 mm): Footprint R3
+[lib_footprint_mismatch]: Footprint 'LED_0805_2012Metric' does not match copy in library 'LED_SMD'.
+    Local override; warning
+    @(118.1900 mm, 85.4000 mm): Footprint D1
+[lib_footprint_mismatch]: Footprint 'R_0603_1608Metric_Pad0.98x0.95mm_HandSolder' does not match copy in library 'Resistor_SMD'.
+    Local override; warning
+    @(151.5400 mm, 90.8500 mm): Footprint R2
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **

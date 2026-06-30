@@ -1,0 +1,27 @@
+Drill report for codemyriad-protogon.kicad_pcb
+Created on 2026-06-30T10:05:17+0200
+
+Copper Layer Stackup:
+    =============================================================
+    L1 :  F.Cu                      front
+    L2 :  B.Cu                      back
+
+
+Drill file 'codemyriad-protogon-PTH.drl' contains
+    plated through holes:
+    =============================================================
+    T1  0.300mm  0.0118"  (1 hole)
+    T2  0.400mm  0.0157"  (8 holes)
+    T3  0.400mm  0.0157"  (16 holes)
+    T4  1.000mm  0.0394"  (140 holes)
+    T5  1.200mm  0.0472"  (2 holes)
+    T6  2.200mm  0.0866"  (2 holes)
+
+    Total plated holes count 169
+
+
+Drill file 'codemyriad-protogon-NPTH.drl' contains
+    unplated through holes:
+    =============================================================
+
+    Total unplated holes count 0

@@ -1,0 +1,6 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "ZD24C64A-XGMT")(type "KiCad")(uri "${KIPRJMOD}/JLC2KiCad_lib/symbol/ZD24C64A-XGMT.kicad_sym")(options "")(descr ""))
+  (lib (name "SM04B-SRSS-TB_(LF)(SN)")(type "KiCad")(uri "${KIPRJMOD}/JLC2KiCad_lib/symbol/SM04B-SRSS-TB_(LF)(SN).kicad_sym")(options "")(descr ""))
+  (lib (name "PZ254V-11-02P")(type "KiCad")(uri "${KIPRJMOD}/JLC2KiCad_lib/symbol/PZ254V-11-02P.kicad_sym")(options "")(descr ""))
+)

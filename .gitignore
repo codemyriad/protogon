@@ -17,10 +17,13 @@ _autosave-*
 *.rpt
 fp-info-cache
 
-# --- Upstream reference clone (kept locally for reference, not vendored) ---
-# This is a clone of github.com/emfcamp/badge-2024-hardware with its own .git.
-# The bits we actually depend on (paper template, CERN-OHL-P license) are
-# already copied into codemyriad-protogon/. Excluded to avoid an embedded repo.
+# --- LibreOffice / editor lock files (e.g. BOM csv opened in Calc) ---
+.~lock.*#
+
+# --- Upstream reference clone (only needed by archive/tools/generate_protogon.py) ---
+# A clone of github.com/emfcamp/badge-2024-hardware with its own .git. The bits we
+# actually depend on (paper template, CERN-OHL-P license) are already in the repo.
+# Excluded to avoid an embedded repo.
 /_upstream_badge_2024_hardware/
 
 # --- Scratch render dirs ---
