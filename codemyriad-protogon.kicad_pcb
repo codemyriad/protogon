@@ -3251,7 +3251,7 @@
 			(at -0.499873 -1.938024 90)
 			(size 0.6 1.550013)
 			(layers "F.Cu" "F.Mask" "F.Paste")
-			(net 10 "/3V3")
+			(net 15 "+3.3V")
 			(pinfunction "2")
 			(pintype "unspecified")
 			(uuid "8dde8371-4ac4-4028-8345-3677990c839b")
