@@ -2151,7 +2151,7 @@
 		(path "/86a61882-4b9e-47e0-b704-644cc834a6f8")
 		(sheetname "/")
 		(sheetfile "codemyriad-protogon.kicad_sch")
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_line
 			(start 3.87 -1.33)
 			(end 3.87 24.19)
@@ -2634,7 +2634,7 @@
 		(path "/37108d06-f4f3-4ca1-bce2-dec6705a64d1")
 		(sheetname "/")
 		(sheetfile "codemyriad-protogon.kicad_sch")
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_line
 			(start -2.540005 -1.270003)
 			(end -0.635001 -1.270003)

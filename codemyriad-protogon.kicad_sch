@@ -4138,7 +4138,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "37108d06-f4f3-4ca1-bce2-dec6705a64d1")
 		(property "Reference" "P1"
@@ -4847,7 +4847,7 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "86a61882-4b9e-47e0-b704-644cc834a6f8")
 		(property "Reference" "J2"
 			(at 112.776 53.086 0)
