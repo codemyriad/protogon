@@ -58,7 +58,7 @@ MLX_EE = 0x2400          # factory calibration EEPROM, 832 words, CONSTANT
 MLX_EE_WORDS = 832
 MLX_STATUS = 0x8000      # bit3 = data ready, bit0 = subpage just measured
 MLX_CTRL1 = 0x800D       # refresh[9:7], resolution[11:10], mode bit12
-MLX_I2CCFG = 0x800F      # bit0 = FM+ enable (we force standard mode)
+MLX_I2CCFG = 0x800F      # bit0: 0 = FM+ enabled (power-on default), 1 = FM+ disabled
 STAT_DATA_READY = 0x0008
 STAT_CLEAR = 0x0030      # write to status: clear data-ready, keep RAM overwrite
 
@@ -124,12 +124,13 @@ def mlx_setup(i2c, refresh_code=0x2):
 
     refresh_code: 0=0.5Hz,1=1,2=2,3=4Hz... (never above 4 Hz at 133 kHz).
     """
-    # FM+ off (bit0 of I2C config). Harmless if already 0; guards against a
-    # previous app leaving the part in 1 MHz mode.
+    # Disable FM+ (datasheet 0x800F bit0: 0 = FM+ enabled, which is the
+    # power-on default; 1 = FM+ disabled). With FM+ off the part uses its
+    # standard-mode input filters -- the conservative config this soak claims.
     try:
         cfg = read_word(i2c, MLX_ADDR, MLX_I2CCFG)
-        if cfg & 0x0001:
-            write_word(i2c, MLX_ADDR, MLX_I2CCFG, cfg & ~0x0001)
+        if not (cfg & 0x0001):
+            write_word(i2c, MLX_ADDR, MLX_I2CCFG, cfg | 0x0001)
     except OSError:
         pass
     ctrl = read_word(i2c, MLX_ADDR, MLX_CTRL1)
@@ -213,15 +214,44 @@ class Tally:
 
     @property
     def errors(self):
+        # frame_err is a breakdown, not a class of its own: those OSErrors are
+        # already classified into nack/timeout/other by record_oserror, so
+        # summing it here would double-count one physical bus event.
         return (self.nack + self.timeout + self.other +
-                self.byte_mismatch + self.frame_err + self.wr_mismatch)
+                self.byte_mismatch + self.wr_mismatch)
+
+
+def with_retries(label, fn, tries=3):
+    """Run fn(), retrying on OSError (marginal buses NACK sporadically even
+    during setup). Returns fn()'s result, or None after the last failure with
+    a printed diagnosis instead of an unhandled traceback."""
+    for attempt in range(1, tries + 1):
+        try:
+            return fn()
+        except OSError as e:
+            print("  ! %s failed (attempt %d/%d): %r" % (label, attempt, tries, e))
+            time.sleep_ms(50)
+    print("  ! %s did not succeed after %d attempts. The bus is unhealthy at" % (label, tries))
+    print("    133 kHz already -- check seating and the Qwiic cable, then re-run.")
+    return None
 
 
 def snapshot_golden(i2c):
-    """Read the constant reference data once. Returns (mlx_ee, eeprom_hdr)."""
-    mlx_ee = read_words(i2c, MLX_ADDR, MLX_EE, MLX_EE_WORDS)
-    eeprom_hdr = i2c.readfrom_mem(EEPROM_ADDR, 0x0000, EEPROM_SNAP_BYTES, addrsize=16)
-    return mlx_ee, eeprom_hdr
+    """Read the constant reference data. Returns (mlx_ee, eeprom_hdr).
+
+    Read twice and require both passes to agree, so a corrupted read can't
+    silently become the comparison baseline (which would then flag every
+    subsequent clean read as an error).
+    """
+    for _ in range(3):
+        a = (read_words(i2c, MLX_ADDR, MLX_EE, MLX_EE_WORDS),
+             i2c.readfrom_mem(EEPROM_ADDR, 0x0000, EEPROM_SNAP_BYTES, addrsize=16))
+        b = (read_words(i2c, MLX_ADDR, MLX_EE, MLX_EE_WORDS),
+             i2c.readfrom_mem(EEPROM_ADDR, 0x0000, EEPROM_SNAP_BYTES, addrsize=16))
+        if a[0] == b[0] and a[1] == b[1]:
+            return a
+        print("  ! golden snapshot reads disagree -- retrying")
+    raise OSError(_ETIMEDOUT, "golden snapshot unstable after 3 double-reads")
 
 
 def soak(i2c, golden, seconds, label, aggressor=None):
@@ -297,7 +327,7 @@ def report_soak(label, t):
     print("    byte mismatches : %d" % t.byte_mismatch)
     print("    bit errors      : %d   (BER %.2e)" % (t.bit_errors, ber))
     print("    write mismatches: %d" % t.wr_mismatch)
-    print("    frame errors    : %d" % t.frame_err)
+    print("    frame-read errs : %d   (subset of the NACK/timeout/other lines)" % t.frame_err)
     print("    TOTAL ERRORS    : %d" % t.errors)
     return t.errors, ber
 
@@ -389,7 +419,10 @@ def phase_bringup(i2c):
 
 def phase_camera(i2c):
     print("phase 2: camera proof")
-    ctrl = mlx_setup(i2c, refresh_code=0x2)   # 2 Hz, standard mode
+    ctrl = with_retries("MLX setup",
+                        lambda: mlx_setup(i2c, refresh_code=0x2))  # 2 Hz
+    if ctrl is None:
+        return False
     print("  CTRL1 set to 0x%04X (2 Hz, standard mode)" % ctrl)
     # Read a few subpages so both halves of the chess pattern get fresh data.
     pixels = [0] * 768
@@ -424,9 +457,12 @@ def phase_camera(i2c):
 
 def phase_soak(i2c):
     print("phase 3: integrity soak @ 133 kHz")
-    golden = snapshot_golden(i2c)
-    print("  snapshot: MLX cal-EEPROM %d words + ID-EEPROM %d bytes (golden)"
-          % (MLX_EE_WORDS, EEPROM_SNAP_BYTES))
+    golden = with_retries("golden snapshot", lambda: snapshot_golden(i2c))
+    if golden is None:
+        print("  cannot soak without a stable golden snapshot; skipping phases 3-4.")
+        return {}
+    print("  snapshot: MLX cal-EEPROM %d words + ID-EEPROM %d bytes (golden,"
+          " double-read verified)" % (MLX_EE_WORDS, EEPROM_SNAP_BYTES))
     quiet = soak(i2c, golden, SOAK_SECONDS, "quiet")
     qe, qber = report_soak("quiet (no aggressor)", quiet)
     results = {"quiet": (qe, qber)}

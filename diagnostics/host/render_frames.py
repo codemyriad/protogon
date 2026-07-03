@@ -98,7 +98,10 @@ def main():
         out = "frame_%03d.png" % n
         try:
             out = save_png_pillow(norm, out)
-        except Exception:
+        except ImportError:
+            out = save_pgm(norm, out)   # no Pillow: the documented fallback
+        except Exception as e:
+            print("PNG save failed (%r); writing PGM instead" % (e,))
             out = save_pgm(norm, out)
         print("wrote %s  (raw ADC lo=%d hi=%d)" % (out, lo, hi))
     return 0

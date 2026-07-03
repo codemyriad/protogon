@@ -89,6 +89,21 @@ def main():
     ns["DO_CROSSTALK"] = not args.no_crosstalk
     ns["RENDER_FRAMES"] = not args.no_render
 
+    # Take the golden snapshot fault-free. The sim's job is proving the
+    # counters count what we inject; if injected faults could corrupt the
+    # baseline itself, every later compare would flag phantom mismatches and
+    # the measured BER would drift to ~2x the injected rate.
+    orig_snapshot = ns["snapshot_golden"]
+
+    def clean_snapshot(i2c):
+        saved = (faults.base_ber, faults.aggr_ber, faults.nack_rate)
+        faults.base_ber = faults.aggr_ber = faults.nack_rate = 0.0
+        try:
+            return orig_snapshot(i2c)
+        finally:
+            faults.base_ber, faults.aggr_ber, faults.nack_rate = saved
+    ns["snapshot_golden"] = clean_snapshot
+
     print("### SIMULATION -- fake hardware, virtual clock. Not a real badge. ###\n")
     ns["main"]()
     print("\n### END SIMULATION. This proves the script's LOGIC only -- it says")

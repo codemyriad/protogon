@@ -13,7 +13,8 @@ It can inject bus faults (bit errors, NACKs) so you can confirm the diagnostic's
 integrity checker and crosstalk comparison actually do what they claim.
 
 This is a LOGIC simulator, not a signal-integrity simulator. It tells you the
-script is correct; it tells you nothing about the real bus. See sim/README note.
+script is correct; it tells you nothing about the real bus. See the "Develop
+without a badge" section of diagnostics/README.md.
 """
 import math
 import random
@@ -51,8 +52,10 @@ class Faults:
         return self.base_ber + (self.aggr_ber if self.aggressor_on else 0.0)
 
     def maybe_nack(self):
-        rate = self.nack_rate * (4.0 if self.aggressor_on else 1.0)
-        return rate > 0 and self.rng.random() < rate
+        # Flat per-transaction probability, exactly as documented above. (An
+        # earlier version silently quadrupled it while the aggressor ran,
+        # which manufactured a crosstalk verdict out of thin air.)
+        return self.nack_rate > 0 and self.rng.random() < self.nack_rate
 
     def corrupt(self, data):
         ber = self.ber_now()
@@ -70,59 +73,89 @@ class Faults:
 
 
 class FakeMLX:
-    """MLX90640 emulator: constant cal-EEPROM + animated frames + registers."""
+    """MLX90640 emulator: constant cal-EEPROM + animated frames + registers.
+
+    Models the real part's measurement loop: the refresh rate comes from the
+    CTRL1 bits [9:7] the diagnostic actually writes, subpages alternate in
+    chess pattern (each measurement refreshes only half the pixels; the other
+    half persists in RAM), and data-ready latches until the status write
+    clears it.
+
+    Known simplification: measurements restart from the host's status-clear
+    write instead of free-running, so RAM never changes mid-read here -- the
+    real part's torn-frame hazard (next subpage overwriting RAM while you are
+    still reading it) cannot be reproduced by this fake.
+    """
     def __init__(self, clock):
         self.clock = clock
         # Constant, per-device calibration EEPROM (832 words). Deterministic.
         self.cal = struct.pack(">" + "H" * 832,
                                *[(i * 40503 + 0x1234) & 0xFFFF for i in range(832)])
         self.ctrl1 = 0x1901      # power-on default (2 Hz, chess, 18-bit)
-        self.i2ccfg = 0x0000     # standard mode
+        self.i2ccfg = 0x0000     # power-on default: FM+ enabled (bit0 = 0)
         self.subpage = 0
         self.frame_n = 0
         self.last_clear = -10_000
-        self.refresh_ms = 120    # sim: produce data-ready this often (virtual)
-        self.ram = b"\x00" * (832 * 2)
-        self._gen_frame()
+        self._pending = False    # a measured, unread subpage sits in RAM
+        self.words = [0] * 832
+        self._gen_frame(0)       # populate both chess halves so the first
+        self._gen_frame(1)       # RAM read never sees uninitialized pixels
+        aux = self.words
+        aux[768 + 0x00] = 0x6A12  # ~Ta_VBE-ish
+        aux[768 + 0x20] = 0x6900  # ~Ta_PTAT-ish
+        aux[768 + 0x2A] = 0x4B30  # ~Vdd-ish
+        self.ram = struct.pack(">" + "H" * 832, *self.words)
 
-    def _gen_frame(self):
+    def refresh_ms(self):
+        # CTRL1 bits [9:7]: 0=0.5 Hz, 1=1 Hz, ... 7=64 Hz (period halves per step)
+        return 2000 >> ((self.ctrl1 >> 7) & 0x7)
+
+    def _gen_frame(self, subpage):
+        """One measurement: refresh only this subpage's chess-pattern pixels."""
         self.frame_n += 1
         t = self.frame_n
         cx = 16 + 9 * math.cos(t / 3.0)
         cy = 12 + 6 * math.sin(t / 3.0)
-        words = []
         for r in range(24):
             for c in range(32):
+                if (r + c) & 1 != subpage:
+                    continue
                 grad = 7000 + c * 18 + r * 12
                 d2 = (c - cx) ** 2 + (r - cy) ** 2
                 blob = 2600.0 * math.exp(-d2 / 16.0)
-                v = int(grad + blob) & 0xFFFF
-                words.append(v)
-        aux = [0] * 64
-        aux[0x00] = 0x6A12        # ~Ta_VBE-ish
-        aux[0x20] = 0x6900        # ~Ta_PTAT-ish
-        aux[0x2A] = 0x4B30        # ~Vdd-ish
-        words.extend(aux)
-        self.ram = struct.pack(">" + "H" * 832, *words)
+                self.words[r * 32 + c] = int(grad + blob) & 0xFFFF
+        self.ram = struct.pack(">" + "H" * 832, *self.words)
 
     def _status(self):
-        ready = (self.clock.now() - self.last_clear) >= self.refresh_ms
-        return (0x0008 if ready else 0x0000) | (self.subpage & 1)
+        # A new measurement completes refresh_ms after the last status clear;
+        # data-ready then latches until the next status write.
+        if not self._pending and \
+                (self.clock.now() - self.last_clear) >= self.refresh_ms():
+            self.subpage ^= 1
+            self._gen_frame(self.subpage)
+            self._pending = True
+        return (0x0008 if self._pending else 0x0000) | (self.subpage & 1)
+
+    def _slice(self, buf, base, memaddr, nbytes):
+        off = (memaddr - base) * 2
+        if off + nbytes > len(buf):
+            raise AssertionError(
+                "SIM: read of %d bytes at 0x%04X overruns the region at 0x%04X"
+                " -- real machine.I2C would return the requested length"
+                % (nbytes, memaddr, base))
+        return buf[off:off + nbytes]
 
     def read(self, memaddr, nbytes):
-        nwords = nbytes // 2
         if 0x2400 <= memaddr < 0x2400 + 832:
-            off = (memaddr - 0x2400) * 2
-            return self.cal[off:off + nbytes]
+            return self._slice(self.cal, 0x2400, memaddr, nbytes)
         if 0x0400 <= memaddr < 0x0740:
-            off = (memaddr - 0x0400) * 2
-            return self.ram[off:off + nbytes]
-        if memaddr == 0x8000:
-            return struct.pack(">H", self._status())[:nbytes]
-        if memaddr == 0x800D:
-            return struct.pack(">H", self.ctrl1)[:nbytes]
-        if memaddr == 0x800F:
-            return struct.pack(">H", self.i2ccfg)[:nbytes]
+            return self._slice(self.ram, 0x0400, memaddr, nbytes)
+        if memaddr in (0x8000, 0x800D, 0x800F):
+            if nbytes != 2:
+                raise AssertionError("SIM: register read must be 2 bytes")
+            val = {0x8000: self._status(), 0x800D: self.ctrl1,
+                   0x800F: self.i2ccfg}[memaddr]
+            return struct.pack(">H", val)
         # unknown region -> zeros (length-correct)
         return b"\x00" * nbytes
 
@@ -130,10 +163,9 @@ class FakeMLX:
         if len(buf) < 2:
             return
         val = struct.unpack(">H", buf[:2])[0]
-        if memaddr == 0x8000:           # status clear -> new subpage + frame
+        if memaddr == 0x8000:           # status write clears data-ready
             self.last_clear = self.clock.now()
-            self.subpage ^= 1
-            self._gen_frame()
+            self._pending = False
         elif memaddr == 0x800D:
             self.ctrl1 = val
         elif memaddr == 0x800F:
@@ -152,6 +184,10 @@ class FakeEEPROM:
         self.data = bytes(data)
 
     def read(self, byteaddr, nbytes):
+        if byteaddr + nbytes > len(self.data):
+            raise AssertionError(
+                "SIM: EEPROM read of %d bytes at 0x%04X runs past the 8 KiB part"
+                % (nbytes, byteaddr))
         return self.data[byteaddr:byteaddr + nbytes]
 
     def write(self, byteaddr, buf):
@@ -184,22 +220,42 @@ class FakeI2C:
     def scan(self):
         return [MLX_ADDR, EEPROM_ADDR]
 
+    def _check_addrsize(self, addr, addrsize):
+        # Both real parts here (MLX90640, ZD24C64A) take 16-bit memory
+        # addresses. A script that forgets addrsize=16 would break on the
+        # badge, so the sim must catch it rather than silently working.
+        if addrsize != 16:
+            raise AssertionError(
+                "SIM: device 0x%02X needs addrsize=16, got addrsize=%d "
+                "(this WOULD fail on real hardware)" % (addr, addrsize))
+
     def readfrom_mem(self, addr, memaddr, nbytes, addrsize=8):
+        self._check_addrsize(addr, addrsize)
         self._advance(nbytes)
         if self.faults.maybe_nack():
             raise OSError(ENODEV, "injected NACK")
         data = self._dev(addr).read(memaddr, nbytes)
         return self.faults.corrupt(data)
 
+    def readfrom_mem_into(self, addr, memaddr, buf, addrsize=8):
+        buf[:] = self.readfrom_mem(addr, memaddr, len(buf), addrsize=addrsize)
+
     def writeto_mem(self, addr, memaddr, buf, addrsize=8):
+        self._check_addrsize(addr, addrsize)
         self._advance(len(buf))
         if self.faults.maybe_nack():
             raise OSError(ENODEV, "injected NACK")
-        self._dev(addr).write(memaddr, bytes(buf))
+        # Bit errors can hit writes too; a corrupted register write is what
+        # the diagnostic's write-readback check exists to catch.
+        self._dev(addr).write(memaddr, bytes(self.faults.corrupt(bytes(buf))))
 
-    # not used by the diagnostic, present for completeness
+    # Used only as an address-pointer set / ACK probe by real code; still has
+    # to honor the device map and fault model rather than silently succeed.
     def writeto(self, addr, buf):
         self._advance(len(buf))
+        if self.faults.maybe_nack():
+            raise OSError(ENODEV, "injected NACK")
+        self._dev(addr)  # ENODEV for absent devices; data has no effect here
 
 
 class FakePin:

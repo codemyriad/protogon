@@ -9,16 +9,23 @@ at"* — as a stock badge physically allows.
 Written for a software person borrowing a Tildagon: no PCB tools, no soldering,
 nothing installed on the badge. One file, run over USB.
 
+> Looking to show the camera image **on the badge's screen** instead of in
+> your terminal? That's the app in [`../app/`](../app/) — it installs onto
+> Protogon's EEPROM and auto-launches on insert. This directory is the
+> lower-level bus stress-test.
+
 ---
 
 ## TL;DR
 
 ```bash
 pip install --user mpremote
+cd diagnostics    # all commands below run from this directory
 # Protogon in a slot, thermal camera in the Qwiic port, badge on USB-IN:
 mpremote run protogon_thermal_test.py | tee results.log
 # optional: turn the camera frame it printed into a thermal PNG
 python3 host/render_frames.py results.log
+# (PNG needs Pillow -- `pip install --user pillow`; without it you get a .pgm)
 ```
 
 Edit `PORT` at the top of `protogon_thermal_test.py` to match the slot you used.
@@ -104,7 +111,9 @@ This is what it's good for: iterating the logic and report format, seeing the
 ASCII thermal image before you have hardware, and **proving the error-counting
 and crosstalk verdict actually fire** (inject faults, watch them get caught). A
 60 s soak runs in a fraction of a second on a virtual clock, while still
-reporting realistic 133 kHz throughput.
+reporting realistic 133 kHz throughput. The golden snapshot is always taken
+fault-free, so the BER the report measures should match the rate you injected
+— that's the check.
 
 What it is **not**: a signal-integrity simulator. It validates the script's
 *logic only* — it tells you nothing about real 133 kHz bus timing, the badge
