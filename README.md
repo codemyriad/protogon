@@ -27,6 +27,19 @@ So for a hexpansion that reads a Qwiic sensor and shows up by name on the badge:
 
 The grid stays full whether or not the I²C block is fitted. Some go out bare; build your own with the block populated or left off.
 
+## Software in this repo
+
+Both come with host simulators, so you can develop and test without a badge:
+
+* [`app/`](app/) — **the thermal camera demo**: plug an MLX90640 Qwiic camera
+  into Protogon and the badge screen becomes a live heatmap. The app installs
+  onto Protogon's EEPROM (one `mpremote` command) and auto-launches on any
+  badge on insert. Beginner-friendly walkthrough in [`app/README.md`](app/README.md).
+* [`diagnostics/`](diagnostics/) — an I²C bus stress-test / bring-up tool for
+  the assembled board, using the same camera as the traffic source: bus scan,
+  camera proof (ASCII thermal image over serial), integrity soak with
+  bit-error counting, and a crosstalk probe.
+
 ## Renders
 
 Black soldermask, ENIG gold, 1 mm FR4. KiCad raytraced renders of the real board.
@@ -56,7 +69,7 @@ Fab spec:
 
 Outputs in [`fabrication/`](fabrication/): Gerbers + drill zipped in [`codemyriad-protogon-fab.zip`](fabrication/codemyriad-protogon-fab.zip), a [STEP model](fabrication/step/), the [DRC report](fabrication/drc-report.txt) (0 errors, 0 unconnected), and a [BOM](fabrication/bom.csv) with LCSC numbers. SMD parts are the I²C block (EEPROM, Qwiic, pull-ups, decoupling cap) plus a power LED and its resistor; the rest is through-hole or plated holes. We hand-solder, so the BOM is for hand assembly, not a pick-and-place. The [300-board giveaway order](fabrication/BOM_300boards_mouser.csv) is there too.
 
-Getting the badge to identify your board is firmware, not hardware: point [`prepare_eeprom.py`](https://github.com/emfcamp/badge-2024-software/blob/main/modules/scripts/prepare_eeprom.py) at the right I²C port with a real VID/PID, write once, and the badge picks it up on insert (detection logic in [`util.py`](https://github.com/emfcamp/badge-2024-software/blob/main/modules/system/hexpansion/util.py)). Smoke-test a read and write on a real badge before you order a batch; the files can't prove that part.
+Getting the badge to identify your board is firmware, not hardware: [`app/provision_protogon.py`](app/provision_protogon.py) writes the identity header, filesystem and demo app in one `mpremote` command (it wraps what the badge firmware's [`prepare_eeprom.py`](https://github.com/emfcamp/badge-2024-software/blob/main/modules/scripts/prepare_eeprom.py) does, plus the single-transaction header write our Zetta EEPROM needs, plus verification — detection logic in [`util.py`](https://github.com/emfcamp/badge-2024-software/blob/main/modules/system/hexpansion/util.py)). Smoke-test a read and write on a real badge before you order a batch; the files can't prove that part.
 
 ## How this was made
 
@@ -67,6 +80,8 @@ The first cut was laid out by an LLM, and it showed: the Qwiic connector bolted 
 | Path | What |
 |---|---|
 | `codemyriad-protogon.kicad_pcb` / `.kicad_sch` / `.kicad_pro` | the KiCad design |
+| [`app/`](app/) | thermal camera badge app + EEPROM provisioning (+ host simulator) |
+| [`diagnostics/`](diagnostics/) | I²C bus stress-test / bring-up tool (+ host simulator) |
 | [`fabrication/`](fabrication/) | Gerbers, drill, STEP, BOM, placement, DRC report |
 | [`renders/`](renders/) | the board renders above |
 | `*.pretty`, `JLC2KiCad_lib/` | the footprint and symbol libraries |
