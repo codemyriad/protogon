@@ -5766,6 +5766,18 @@
 			(justify left bottom)
 		)
 	)
+	(gr_text "kongroo"
+		(at 105 89.5 30)
+		(layer "F.SilkS")
+		(uuid "aa11bb22-0003-4abc-9def-000000000003")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.16)
+				(bold yes)
+			)
+		)
+	)
 	(gr_text "protogon"
 		(at 105 89.5 30)
 		(layer "B.SilkS")
