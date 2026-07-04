@@ -1,0 +1,7 @@
+# Python bytecode (tools + sim)
+__pycache__/
+*.py[cod]
+
+# sim output previews
+screen.png
+screen.ppm

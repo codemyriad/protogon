@@ -20,6 +20,10 @@ The KiCad files are in the root: `codemyriad-protogon.kicad_*`.
 The `fabrication/codemyriad-protogon-fab.zip` file is ready to upload to produce the board through a PCB manufacturing service. Make sure you select 1.0 mm FR4 and ENIG finish!
 `fabrication/bom-lcsc.csv` contains a Bill Of Materials with LCSC codes.
 
+## Testing the EEPROM
+
+This branch adds [`eeprom-image/`](eeprom-image/): one `mpremote` command that validates a produced board's EEPROM (writes and verifies every cell, PASS/FAIL) and leaves it showing the Codemyriad logo on the badge screen. Doubles as a minimal example app. Includes a host simulator. See [`eeprom-image/README.md`](eeprom-image/README.md).
+
 
 ## Credits
 
