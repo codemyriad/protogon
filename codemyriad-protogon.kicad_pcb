@@ -5733,7 +5733,7 @@
 		)
 	)
 	(gr_text "WP"
-		(at 152.3 93.9 0)
+		(at 152.5 94.9 0)
 		(layer "F.SilkS")
 		(uuid "aa11bb22-0001-4abc-9def-000000000001")
 		(effects
