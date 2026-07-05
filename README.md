@@ -21,6 +21,13 @@ The `fabrication/codemyriad-protogon-fab.zip` file is ready to upload to produce
 `fabrication/bom-lcsc.csv` contains a Bill Of Materials with LCSC codes.
 
 
+## Badge demos
+
+This branch also carries `demos/` — fourteen tiny badge screen demos (Tixy grid,
+moiré, a Qix tracer, an IMU starfield, a polar tunnel, and more) with a little
+host simulator so you can watch them on a PC before flashing anything. See
+`demos/README.md`. It's separate from the board design; `main` stays board-only.
+
 ## Credits
 
 * Many thanks to **JakeW** for the [Protoboard Hexpansion](https://www.tindie.com/products/jakew/protoboard-hexpansion/). The idea for this board came from seeing his one.
