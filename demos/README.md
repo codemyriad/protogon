@@ -14,25 +14,36 @@ they sound: `uan`(1), `ciu`(2), `tri`(3), `for`(4), `faiv`(5), `sics`(6),
 
 ## The demos
 
-| # | name | what it is | controls (all: **CANCEL** exits) | LEDs |
-|---|------|-----------|----------------------------------|:----:|
-| 1 | [`uan`](uan/uan.gif) | **Tixy grid** — one formula drives a 16×16 dot field | LEFT/RIGHT formula · UP/DOWN speed | |
-| 2 | [`ciu`](ciu/ciu.gif) | **Moiré rings** — two drifting ring families interfere | RIGHT circles↔hexagons | |
-| 3 | [`tri`](tri/tri.gif) | **Qix tracer** — bouncing points with a fading trail | CONFIRM add point · RIGHT palette | ● |
-| 4 | [`for`](for/for.gif) | **IMU starfield** — tilt steers the drift | tilt (WASD in sim) · UP/DOWN warp | ● |
-| 5 | [`faiv`](faiv/faiv.gif) | **Polar tunnel** — concentric rings breathe | RIGHT colour scheme | |
-| 6 | [`sics`](sics/sics.gif) | **Hex kaleidoscope** — one wedge stamped N-fold | CONFIRM randomise · RIGHT/LEFT symmetry | |
-| 7 | [`seven`](seven/seven.gif) | **Hopalong** — strange-attractor point cloud | RIGHT/LEFT preset | |
-| 8 | [`eit`](eit/eit.gif) | **Matrix rain** — glyph columns, round-cropped | RIGHT colour | |
-| 9 | [`nain`](nain/nain.gif) | **Plasma tiles** — 16×16 sum-of-sines plasma | RIGHT palette | |
-| 10 | [`ten`](ten/ten.gif) | **LED phase-lock** — screen + ring LEDs share one phase | RIGHT comet/pulse/rainbow | ● |
-| 11 | [`ileven`](ileven/ileven.gif) | **Pipes grower** — orthogonal pipe runs on a grid | CONFIRM clear | |
-| 12 | [`twelv`](twelv/twelv.gif) | **Cellular** — Life / Brian's Brain / cyclic | CONFIRM reseed · RIGHT rule | |
-| 13 | [`thurteen`](thurteen/thurteen.gif) | **Drift lines** — braided spline ribbons | RIGHT/LEFT ribbon count | |
-| 14 | [`forteen`](forteen/forteen.gif) | **Metaballs (lite)** — orbiting translucent blobs | RIGHT/LEFT blob count | |
+Previews are host-simulator renders (logic + composition — not real badge
+colour/timing). Every demo exits with **CANCEL**; ⬤ = also drives the ring LEDs.
 
-Each folder's `.gif` is a render from the host simulator below (logic +
-composition, not real badge colour/timing).
+<table>
+<tr>
+<td align="center"><img src="uan/uan.gif" width="200"><br><b>1 · <code>uan</code></b> — Tixy grid<br><sub>one formula → 16×16 dot field</sub><br><sub>LEFT/RIGHT formula · UP/DOWN speed</sub></td>
+<td align="center"><img src="ciu/ciu.gif" width="200"><br><b>2 · <code>ciu</code></b> — Moiré rings<br><sub>two drifting ring families interfere</sub><br><sub>RIGHT circles↔hexagons</sub></td>
+<td align="center"><img src="tri/tri.gif" width="200"><br><b>3 · <code>tri</code></b> — Qix tracer ⬤<br><sub>bouncing points, fading trail</sub><br><sub>CONFIRM add point · RIGHT palette</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="for/for.gif" width="200"><br><b>4 · <code>for</code></b> — IMU starfield ⬤<br><sub>tilt steers the drift</sub><br><sub>tilt (WASD in sim) · UP/DOWN warp</sub></td>
+<td align="center"><img src="faiv/faiv.gif" width="200"><br><b>5 · <code>faiv</code></b> — Polar tunnel<br><sub>concentric rings breathe</sub><br><sub>RIGHT colour scheme</sub></td>
+<td align="center"><img src="sics/sics.gif" width="200"><br><b>6 · <code>sics</code></b> — Hex kaleidoscope<br><sub>one wedge stamped N-fold</sub><br><sub>CONFIRM randomise · RIGHT/LEFT symmetry</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="seven/seven.gif" width="200"><br><b>7 · <code>seven</code></b> — Hopalong<br><sub>strange-attractor cloud</sub><br><sub>RIGHT/LEFT preset</sub></td>
+<td align="center"><img src="eit/eit.gif" width="200"><br><b>8 · <code>eit</code></b> — Matrix rain<br><sub>glyph columns, round-cropped</sub><br><sub>RIGHT colour</sub></td>
+<td align="center"><img src="nain/nain.gif" width="200"><br><b>9 · <code>nain</code></b> — Plasma tiles<br><sub>16×16 sum-of-sines plasma</sub><br><sub>RIGHT palette</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="ten/ten.gif" width="200"><br><b>10 · <code>ten</code></b> — LED phase-lock ⬤<br><sub>screen + ring LEDs share one phase</sub><br><sub>RIGHT comet/pulse/rainbow</sub></td>
+<td align="center"><img src="ileven/ileven.gif" width="200"><br><b>11 · <code>ileven</code></b> — Pipes grower<br><sub>orthogonal pipe runs on a grid</sub><br><sub>CONFIRM clear</sub></td>
+<td align="center"><img src="twelv/twelv.gif" width="200"><br><b>12 · <code>twelv</code></b> — Cellular<br><sub>Life / Brian's Brain / cyclic</sub><br><sub>CONFIRM reseed · RIGHT rule</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="thurteen/thurteen.gif" width="200"><br><b>13 · <code>thurteen</code></b> — Drift lines<br><sub>braided spline ribbons</sub><br><sub>RIGHT/LEFT ribbon count</sub></td>
+<td align="center"><img src="forteen/forteen.gif" width="200"><br><b>14 · <code>forteen</code></b> — Metaballs (lite)<br><sub>orbiting translucent blobs</sub><br><sub>RIGHT/LEFT blob count</sub></td>
+<td></td>
+</tr>
+</table>
 
 ## Run them — host simulator (no badge, no dependencies)
 
