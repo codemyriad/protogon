@@ -114,6 +114,61 @@ with open(os.path.join(out, "demos.json"), "w") as f:
 print(f"   {len(entries)} demos: " + ", ".join(e["id"] for e in entries))
 EOF
 
+# --- 3b. the one-file version: all code + mission, as markdown -----------------
+echo ">> composing code.md"
+python3 - "$DEMOS_DIR" "$HERE/src/code-intro.md" "$DIST/code.md" <<'EOF'
+import json, os, re, sys
+demos_dir, intro_path, out = sys.argv[1], sys.argv[2], sys.argv[3]
+
+entries = []
+for name in os.listdir(demos_dir):
+    app = os.path.join(demos_dir, name, "app.py")
+    if not os.path.isfile(app):
+        continue
+    src = open(app).read()
+    # the opening comment wraps: join lines until the bare "#" separator
+    head = []
+    for line in src.split("\n"):
+        if line.strip() == "#":
+            break
+        head.append(line.lstrip("# ").rstrip())
+    first = " ".join(head)
+    m = re.match(rf"{re.escape(name)}\s*\((\d+)\)\s*--\s*(.+)", first)
+    if not m:
+        continue
+    n, rest = int(m.group(1)), m.group(2)
+    title = rest.split(".")[0].strip()
+    blurb = ".".join(rest.split(".")[1:]).strip().rstrip(".")
+    prior = re.search(r"PRIOR ART.*?(https?://\S+)", src, re.S)
+    entries.append({"n": n, "id": name, "title": title, "blurb": blurb,
+                    "prior": prior.group(1) if prior else None, "src": src})
+entries.sort(key=lambda e: e["n"])
+
+parts = [open(intro_path).read().rstrip(), "", "## The programs", ""]
+for e in entries:
+    line = f"{e['n']}. **[{e['title']}](#{e['n']}--{e['id']})** — {e['blurb'] or e['id']}"
+    parts.append(line)
+parts.append("")
+
+for e in entries:
+    parts.append("---")
+    parts.append("")
+    parts.append(f"## {e['n']} · {e['id']}")
+    parts.append("")
+    links = [f"[play with it live](https://silvio-demos.pgs.sh/#{e['id']})"]
+    if e["prior"]:
+        links.append(f"[prior art]({e['prior']})")
+    parts.append(f"**{e['title']}** · " + " · ".join(links))
+    parts.append("")
+    parts.append("```python")
+    parts.append(e["src"].rstrip())
+    parts.append("```")
+    parts.append("")
+
+open(out, "w").write("\n".join(parts) + "\n")
+print(f"   code.md: {os.path.getsize(out)//1024} KiB, {len(entries)} programs")
+EOF
+
 # --- 4. bundle the JS -----------------------------------------------------------
 echo ">> bundling editor + app (esbuild)"
 cd "$HERE"
