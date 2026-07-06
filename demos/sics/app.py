@@ -1,19 +1,40 @@
-# sics (6) -- Hex kaleidoscope. Draw one small motif in a wedge, then stamp it
-# N-fold around the centre with ctx.rotate (plus a mirror). CONFIRM randomises
-# the motif, RIGHT/LEFT change the symmetry (6/8/12), CANCEL exits.
+# sics (6) -- Hex kaleidoscope. One tiny random doodle, stamped and mirrored
+# N times around the centre -- instant snowflake.
 #
-#   sim: python3 demos/sim/run.py sics --gif
+# HOW IT WORKS
+#   A real kaleidoscope holds just ONE pinch of coloured junk -- the mirrors
+#   do everything else. Same trick here: each frame we draw one small doodle
+#   (a spoke plus two drifting dots), rotate-stamp it N times around the
+#   centre, and stamp a flipped twin each time so the wedges mirror like
+#   glass. The doodle is random; the symmetry is what makes it beautiful.
+#
+# BUTTONS   CONFIRM new random doodle - RIGHT/LEFT change symmetry - CANCEL exits
+#
+#   sim:   python3 demos/sim/run.py sics --gif
+#   badge: drop demos/sics into the official simulator's sim/apps/ (see README)
 import app
 import math
+import random
 from events.input import Buttons, BUTTON_TYPES
 from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
+# ------------------------------ tweak me -------------------------------------
+# In the playground every number is draggable -- grab one and watch the badge.
+SYMMETRIES = (6, 8, 12)   # wedge counts RIGHT/LEFT step through . try (3, 5, 7)
+WHIRL      = 0.2          # spin of the whole flake ....... try 1.0, or -0.4
+HUE_DRIFT  = 0.05         # colours creep round the rainbow ... rush them: 0.40
+SQUASH     = 0.5          # dot orbit shape: 1.0 round loop, 0.1 flat pancake
+LINE_W     = 2.0          # spoke thickness ................... chunky: 6.0
+DOT_MAX    = 16           # biggest dot a reroll can pick ..... 30, then CONFIRM
+REACH_MAX  = 105          # longest spoke a reroll can pick ... 118 kisses the rim
+
 TAU = 6.28318
-SYMS = (6, 8, 12)
 
+# ---------------------------- a pocket rainbow --------------------------------
 
-def _hue(h):
+def rainbow(h):
+    # hue 0..1 -> (r,g,b), walking the six edges of the colour wheel
     h = h - int(h)
     i = int(h * 6)
     f = h * 6 - i
@@ -32,21 +53,23 @@ def _hue(h):
 
 
 class Sics(app.App):
+    """Roll a random doodle, then let rotational symmetry do the beauty."""
+
     def __init__(self, config=None):
         super().__init__()
         self.button_states = Buttons(self)
-        self.fg = False
-        self.t = 0.0
-        self.symi = 0
-        self._reseed()
+        self.fg = False      # have we taken the screen yet?
+        self.t = 0.0         # seconds since start
+        self.symi = 0        # which entry of SYMMETRIES is live
+        self.reseed()
 
-    def _reseed(self):
-        import random
+    def reseed(self):
+        # roll a fresh doodle: how far the big dot orbits, how fast, how big
         self.orbit = random.uniform(30, 80)
         self.spin = random.uniform(0.6, 2.2) * random.choice((-1, 1))
-        self.dot = random.uniform(6, 16)
+        self.dot = random.uniform(6, DOT_MAX)
         self.hue = random.random()
-        self.reach = random.uniform(60, 105)
+        self.reach = random.uniform(60, REACH_MAX)
 
     def update(self, delta):
         if not self.fg:
@@ -60,43 +83,50 @@ class Sics(app.App):
             return False
         if b.get(BUTTON_TYPES["CONFIRM"]):
             b.clear()
-            self._reseed()
+            self.reseed()
         if b.get(BUTTON_TYPES["RIGHT"]):
             b.clear()
-            self.symi = (self.symi + 1) % len(SYMS)
+            self.symi = (self.symi + 1) % len(SYMMETRIES)
         if b.get(BUTTON_TYPES["LEFT"]):
             b.clear()
-            self.symi = (self.symi - 1) % len(SYMS)
+            self.symi = (self.symi - 1) % len(SYMMETRIES)
         return True
 
-    def _motif(self, ctx):
-        t = self.t
-        a = t * self.spin
-        ox = math.cos(a) * self.orbit
-        oy = math.sin(a) * self.orbit * 0.5
-        r, g, bl = _hue(self.hue + t * 0.05)
-        ctx.line_width = 2.0
-        ctx.rgba(r, g, bl, 0.9)
+    def motif(self, ctx):
+        # the ONE doodle everything is made of: a spoke and two riding dots
+        angle = self.t * self.spin
+        ox = math.cos(angle) * self.orbit           # the big dot rides an oval
+        oy = math.sin(angle) * self.orbit * SQUASH
+        r, g, b = rainbow(self.hue + self.t * HUE_DRIFT)
+        ctx.line_width = LINE_W
+        ctx.rgba(r, g, b, 0.9)
         ctx.move_to(0, 0).line_to(self.reach, 0).stroke()
-        ctx.rgba(bl, r, g, 0.85)
+        ctx.rgba(b, r, g, 0.85)   # same rainbow, channels shuffled: free harmony
         ctx.arc(ox, oy, self.dot, 0, TAU, True).fill()
-        ctx.rgba(g, bl, r, 0.6)
-        ctx.arc(self.reach * 0.7, 6, self.dot * 0.5, 0, TAU, True).fill()
+        ctx.rgba(g, b, r, 0.6)
+        ctx.arc(self.reach * 0.7,   # little dot sits 70% of the way out...
+                6,                  # ...and 6 px off the spoke, so mirrors show
+                self.dot * 0.5, 0, TAU, True).fill()
 
     def draw(self, ctx):
         ctx.save()
         ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
-        sym = SYMS[self.symi]
-        ctx.translate(0, 0)
-        ctx.rotate(self.t * 0.2)
+        sym = SYMMETRIES[self.symi % len(SYMMETRIES)]
+        ctx.rotate(self.t * WHIRL)         # the whole flake turns, slowly
         for s in range(sym):
             ctx.save()
-            ctx.rotate(TAU * s / sym)
-            self._motif(ctx)
-            ctx.scale(1.0, -1.0)      # mirror the wedge
-            self._motif(ctx)
+            ctx.rotate(TAU * s / sym)      # swing round to this wedge...
+            self.motif(ctx)                # ...stamp the doodle...
+            ctx.scale(1.0, -1.0)           # ...flip it like a mirror...
+            self.motif(ctx)                # ...and stamp its twin
             ctx.restore()
         ctx.restore()
 
 
 __app_export__ = Sics
+
+# ------------------------------ try this --------------------------------------
+# - drag the 12 in SYMMETRIES up to 24, press RIGHT until it's live: lace doily
+# - set WHIRL to -0.4 and SQUASH to 1.0 -- reverse spin, perfectly round orbits
+# - in motif(), change line_to(self.reach, 0) to line_to(self.reach, 40):
+#   every spoke bends, and the mirrors fold the bends into zigzag stars

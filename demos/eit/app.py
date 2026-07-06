@@ -1,39 +1,64 @@
-# eit (8) -- Matrix rain, round-cropped. Glyph columns fall; the head is bright,
-# the tail fades, and anything off the round screen is skipped. RIGHT cycles the
-# colour (green/amber/cyan/violet), CANCEL exits.
+# eit (8) -- Matrix rain, round-cropped. Glyph columns fall with bright heads
+# and fading tails; RIGHT cycles the colour.
 #
-#   sim: python3 demos/sim/run.py eit --gif
+# HOW IT WORKS
+#   Each column is one raindrop made of letters: a bright head that falls at
+#   its own speed, towing a tail of glyphs that fade the further back they
+#   sit. Every frame each column answers three questions: how far did I fall?
+#   (speed x time) -- do I flicker a letter? (a dice roll) -- am I off the
+#   bottom? (then restart above the top with a fresh speed and tail length).
+#   Letters that would land outside the round glass are simply not drawn.
+#
+# BUTTONS   RIGHT/LEFT cycle the colour - CANCEL exits
+#
+#   sim:   python3 demos/sim/run.py eit --gif
+#   badge: drop demos/eit into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES
 from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
-GLYPHS = "0123456789ABCDFHKMNPXYZ#*<>/"
-CELL = 15                       # px per glyph row
-COLS = 15
-R2 = 116 * 116
-TINTS = ((0.3, 1.0, 0.4), (1.0, 0.7, 0.1), (0.3, 0.9, 1.0), (0.8, 0.4, 1.0))
+# ------------------------------ tweak me -------------------------------------
+# In the playground every number is draggable -- grab one and watch the badge.
+COLS     = 15     # columns of rain ........ try 8 (sparse) or 22 (dense)
+CELL     = 15     # glyph size AND row spacing, px .. chunky rain: 24
+FALL_MIN = 45.0   # slowest column, px per second
+FALL_MAX = 130.0  # fastest column ......... storm: 300.0
+TAIL_MIN = 6      # shortest tail, in glyphs
+TAIL_MAX = 16     # longest tail ........... long streamers: 24
+FLICKER  = 0.15   # chance per frame a column swaps a letter .. boiling: 0.9
+TINTS = ((0.3, 1.0, 0.4),   # phosphor green   <- RIGHT cycles these four
+         (1.0, 0.7, 0.1),   # amber terminal
+         (0.3, 0.9, 1.0),   # ice cyan
+         (0.8, 0.4, 1.0))   # violet
+
+GLYPHS = "0123456789ABCDFHKMNPXYZ#*<>/"   # the alphabet the rain is made of
+R2 = 116 * 116            # the glass is round: skip glyphs past radius 116
+
+
+def new_column(x, head_y):
+    # one raindrop: where it is, how fast it falls, and the letters it tows
+    return {"x": x,
+            "y": head_y,
+            "speed": random.uniform(FALL_MIN, FALL_MAX),
+            "tail": random.randint(TAIL_MIN, TAIL_MAX),
+            "glyphs": [random.choice(GLYPHS) for _ in range(20)]}
 
 
 class Eit(app.App):
+    """Move every column down a little, flicker a letter, redraw the rain."""
+
     def __init__(self, config=None):
         super().__init__()
         self.button_states = Buttons(self)
-        self.fg = False
-        self.tint = 0
-        self.cols = []
+        self.fg = False     # have we taken the screen yet?
+        self.tint = 0       # which colour is live
+        # one column per slot across the screen, each starting mid-fall
         span = (COLS - 1) * CELL
-        for c in range(COLS):
-            x = -span / 2.0 + c * CELL
-            self.cols.append(self._newcol(x, start=random.uniform(-140, 40)))
-
-    def _newcol(self, x, start=-140):
-        return {"x": x,
-                "y": start,
-                "sp": random.uniform(45, 130),
-                "len": random.randint(6, 16),
-                "g": [random.choice(GLYPHS) for _ in range(20)]}
+        self.cols = [new_column(-span / 2.0 + c * CELL,
+                                random.uniform(-140, 40))
+                     for c in range(COLS)]
 
     def update(self, delta):
         if not self.fg:
@@ -49,35 +74,41 @@ class Eit(app.App):
             b.clear()
             self.tint = (self.tint + 1) % len(TINTS)
         for col in self.cols:
-            col["y"] += col["sp"] * dt
-            if random.random() < 0.15:            # mutate a glyph
-                col["g"][random.randint(0, 19)] = random.choice(GLYPHS)
-            if col["y"] - col["len"] * CELL > 128:
-                col.update(self._newcol(col["x"]))
+            col["y"] += col["speed"] * dt
+            if random.random() < FLICKER:            # swap one letter, anywhere
+                col["glyphs"][random.randint(0, 19)] = random.choice(GLYPHS)
+            if col["y"] - col["tail"] * CELL > 128:  # whole tail is off-screen
+                col.update(new_column(col["x"], -140))
         return True
 
     def draw(self, ctx):
         ctx.save()
         ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
-        ctx.font_size = 15
+        ctx.font_size = CELL
         ctx.text_align = ctx.LEFT
-        tr, tg, tb = TINTS[self.tint]
+        tint = TINTS[self.tint % len(TINTS)]
         for col in self.cols:
             x = col["x"]
             head = col["y"]
-            for k in range(col["len"]):
-                gy = head - k * CELL
+            for k in range(col["tail"]):
+                gy = head - k * CELL                 # k glyphs behind the head
                 if gy < -120 or gy > 120:
                     continue
-                if x * x + gy * gy > R2:
+                if x * x + gy * gy > R2:             # off the round glass
                     continue
                 if k == 0:
-                    ctx.rgb(0.9, 1.0, 0.9)             # bright head
+                    ctx.rgb(0.9, 1.0, 0.9)           # the head glows near-white
                 else:
-                    f = 1.0 - k / col["len"]
-                    ctx.rgba(tr * f, tg * f, tb * f, 0.25 + 0.75 * f)
-                ctx.move_to(x, gy).text(col["g"][k % 20])
+                    fade = 1.0 - k / col["tail"]     # 1 at the head, 0 at the tip
+                    ctx.rgba(tint[0] * fade, tint[1] * fade, tint[2] * fade,
+                             0.25 + 0.75 * fade)
+                ctx.move_to(x, gy).text(col["glyphs"][k % 20])
         ctx.restore()
 
 
 __app_export__ = Eit
+
+# ------------------------------ try this --------------------------------------
+# - set GLYPHS = "01" for binary rain, or spell something: "EMF2026 "
+# - drag FLICKER to 0.9 and the letters boil; at 0.0 each column's text freezes
+# - CELL = 24 with COLS = 9 makes chunky billboard rain (the font follows CELL)
