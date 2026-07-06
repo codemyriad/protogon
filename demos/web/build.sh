@@ -110,15 +110,18 @@ EOF
 # --- 4. bundle the JS -----------------------------------------------------------
 echo ">> bundling editor + app (esbuild)"
 cd "$HERE"
-if [ ! -d node_modules ]; then
+if [ ! -x node_modules/.bin/esbuild ]; then
   npm install --no-audit --no-fund
 fi
-npx esbuild src/app.js --bundle --format=esm --minify --target=es2020 \
-  --outfile="$DIST/app.js"
-npx esbuild src/sim-worker.js --bundle --format=esm --minify --target=es2020 \
-  --outfile="$DIST/sim-worker.js"
+BUILD_ID="$(date +%s)"
+node_modules/.bin/esbuild src/app.js --bundle --format=esm --minify --target=es2020 \
+  --define:__BUILD_ID__="\"$BUILD_ID\"" --outfile="$DIST/app.js"
+node_modules/.bin/esbuild src/sim-worker.js --bundle --format=esm --minify --target=es2020 \
+  --define:__BUILD_ID__="\"$BUILD_ID\"" --outfile="$DIST/sim-worker.js"
 
-cp "$HERE/src/index.html" "$HERE/src/style.css" "$DIST/"
+cp "$HERE/src/style.css" "$DIST/"
+# Version the page's own entry point too, for caches that ignore no-store.
+sed "s/src=\"app.js\"/src=\"app.js?b=$BUILD_ID\"/" "$HERE/src/index.html" > "$DIST/index.html"
 
 echo ">> done: $DIST"
 du -sh "$DIST" | sed 's/^/   /'

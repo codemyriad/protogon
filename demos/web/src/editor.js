@@ -90,11 +90,13 @@ const scrubTheme = EditorView.baseTheme({
   "&.cm-scrubbing, &.cm-scrubbing *": {cursor: "ew-resize !important"},
 });
 
-// Drag handler. mousedown over a number => we own the gesture: returning true
-// stops CodeMirror's selection handling, preventDefault stops native
-// selection. A <3px "drag" is treated as a click and places the cursor.
+// Drag handler. pointerdown over a number => we own the gesture (pointer
+// events, not mousedown: on touch devices the compatibility mousedown fires
+// AFTER pointerup, which would leave the window listeners dangling).
+// preventDefault stops native selection and the synthesized mouse events; a
+// <3px "drag" is treated as a click and places the cursor.
 const scrubDragHandler = EditorView.domEventHandlers({
-  mousedown(event, view) {
+  pointerdown(event, view) {
     if (event.button !== 0) return false;
     const pos = view.posAtCoords({x: event.clientX, y: event.clientY});
     if (pos == null) return false;
@@ -110,10 +112,25 @@ const scrubDragHandler = EditorView.domEventHandlers({
     let currentText = original;
     let moved = false;
 
+    const teardown = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", teardown);
+      view.dom.classList.remove("cm-scrubbing");
+    };
+
+    // The document under the drag must still hold the text we last wrote —
+    // if something else changed it (demo switch mid-drag), abort the gesture
+    // instead of splicing numbers into unrelated code.
+    const docMoved = () =>
+      from + currentText.length > view.state.doc.length ||
+      view.state.sliceDoc(from, from + currentText.length) !== currentText;
+
     const onMove = (e) => {
       const dx = e.clientX - startX;
       if (!moved && Math.abs(dx) < 3) return;   // click vs drag threshold
       moved = true;
+      if (docMoved()) return teardown();
       view.dom.classList.add("cm-scrubbing");
       // Shift = 10x finer once you want it; Alt = 10x coarser.
       let gain = step;
@@ -132,16 +149,14 @@ const scrubDragHandler = EditorView.domEventHandlers({
     };
 
     const onUp = (e) => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      view.dom.classList.remove("cm-scrubbing");
+      teardown();
       if (!moved) {
         // Plain click: behave like normal cursor placement.
         view.dispatch({selection: {anchor: pos}});
         view.focus();
         return;
       }
-      if (currentText !== original) {
+      if (currentText !== original && !docMoved()) {
         // Collapse the drag into a single undoable change: silently restore
         // the original, then re-apply the final value WITH history.
         view.dispatch({
@@ -157,6 +172,7 @@ const scrubDragHandler = EditorView.domEventHandlers({
 
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", teardown);
     return true; // tell CodeMirror the event is handled
   },
 });

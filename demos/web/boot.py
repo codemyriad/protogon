@@ -26,9 +26,6 @@ import traceback
 
 import chost
 
-BOOT_REV = 5
-print(f"boot.py rev {BOOT_REV}")
-
 LIVE_FILE = "/live/app.py"
 
 # --- sys.path + time shadowing (mirrors sim/run.py) -------------------------
@@ -142,10 +139,19 @@ def _instantiate(src):
                 cls = v
     if cls is None:
         raise RuntimeError("No __app_export__ (or app.App subclass) found")
+    # Decide the constructor arity by inspection instead of try/except
+    # TypeError: a TypeError raised INSIDE __init__ must not trigger a second
+    # __init__ run (which would double-register Buttons handlers).
+    import inspect
+
     try:
-        return cls(config=None)
-    except TypeError:
-        return cls()
+        params = inspect.signature(cls.__init__).parameters
+        takes_config = "config" in params or any(
+            p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+        )
+    except (TypeError, ValueError):
+        takes_config = False
+    return cls(config=None) if takes_config else cls()
 
 
 _CARRY_TYPES = (int, float, bool, str)
@@ -177,17 +183,33 @@ def _carry_state(old, new):
 def _probe(app_instance):
     """Run one hidden update+draw against a throwaway drawlist so runtime
     errors (not just syntax errors) reject a swap BEFORE the old app is
-    stopped. The probe never touches the screen."""
+    stopped. The probe never touches the screen; LED writes it causes are
+    rolled back (update() in some demos drives the ring directly)."""
     import ctx as _ctx
+    import _sim as _simmod
 
+    sim = _simmod._sim
+    led_buf, led_now = list(sim.led_state_buf), list(sim.led_state)
     dctx = _ctx._wasm.ctx_new_drawlist(240, 240)
-    print("[probe] start")
     try:
         app_instance.update(0)
         app_instance.draw(_ctx.Context(dctx))
-        print("[probe] passed")
     finally:
         _ctx._wasm.ctx_destroy(dctx)
+        sim.led_state_buf, sim.led_state = led_buf, led_now
+        # If the probe posted LED colours, put the real ones back on the page.
+        chost.setLeds(
+            ",".join(f"{r:.4f} {g:.4f} {b:.4f}" for (r, g, b) in led_now)
+        )
+
+
+def _clear_leds():
+    import _sim as _simmod
+
+    sim = _simmod._sim
+    for i in range(len(sim.led_state_buf)):
+        sim.led_state_buf[i] = (0.0, 0.0, 0.0)
+    sim.leds_update()
 
 
 def swap_app(src, carry=True):
@@ -201,7 +223,17 @@ def swap_app(src, carry=True):
         new = _instantiate(src)
         if old is not None and carry:
             _carry_state(old, new)
-        _probe(new)
+        try:
+            _probe(new)
+        except Exception:
+            if old is None or not carry:
+                raise
+            # The carried state may be what broke it (e.g. an index carried
+            # into a container the edit just shrank). Retry pristine before
+            # rejecting a possibly-valid edit.
+            eventbus.deregister(new)
+            new = _instantiate(src)
+            _probe(new)
     except Exception as e:
         _report("swap", e)
         if new is not None:  # drop Buttons handlers the failed instance registered
@@ -212,6 +244,8 @@ def swap_app(src, carry=True):
         eventbus.emit(RequestStopAppEvent(app=old))
     eventbus.emit(RequestStartAppEvent(new, foreground=True))
     _state["app"] = new
+    if "leds" not in src:
+        _clear_leds()  # incoming app never drives the ring: don't inherit glow
     return True
 
 

@@ -45,7 +45,11 @@ let editor = null;
 let bootedOnce = false;
 let swapSeq = 0;
 const swapSrcById = new Map(); // in-flight swap id -> source we sent
+const reviveIds = new Set(); // swaps we initiated to revive after a crash
 let lastAutoRevive = 0;
+let currentSpeed = 1;
+let pongPending = false;
+let lastPingAt = 0;
 
 // ---------------------------------------------------------------------------
 // Badge chrome
@@ -113,9 +117,12 @@ function setButton(i, down) {
 
 function bindKeyboard() {
   const keyIndex = new Map(BUTTONS.map((b, i) => [b.key, i]));
-  const inEditor = (ev) => $("#editor").contains(ev.target);
+  const shouldIgnore = (ev) =>
+    $("#editor").contains(ev.target) ||
+    (ev.target instanceof Element &&
+      ev.target.closest("button, input, select, textarea, a, summary"));
   window.addEventListener("keydown", (ev) => {
-    if (inEditor(ev) || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (shouldIgnore(ev) || ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const i = keyIndex.get(ev.key);
     if (i === undefined) return;
     ev.preventDefault();
@@ -155,9 +162,10 @@ function send(msg) {
   worker?.postMessage(msg);
 }
 
-function requestSwap(src) {
+function requestSwap(src, { revive = false } = {}) {
   const id = ++swapSeq;
   swapSrcById.set(id, src);
+  if (revive) reviveIds.add(id);
   send({ type: "swap", src, id });
 }
 
@@ -170,14 +178,21 @@ function bootStatus(text, isError = false) {
 
 function spawnWorker(src) {
   workerReady = false;
-  worker?.terminate();
+  pongPending = false;
+  if (worker) {
+    worker.onmessage = null; // a dead worker's queued messages must not land
+    worker.terminate();
+  }
+  swapSrcById.clear();
+  reviveIds.clear();
 
   // transferControlToOffscreen is once-per-element: rebuild the canvas node.
   const old = $("#screen");
   const canvas = old.cloneNode(false);
   old.replaceWith(canvas);
 
-  worker = new Worker(new URL("./sim-worker.js", import.meta.url), {
+  const BUILD = typeof __BUILD_ID__ === "string" ? __BUILD_ID__ : "dev";
+  worker = new Worker(new URL(`./sim-worker.js?b=${BUILD}`, import.meta.url), {
     type: "module",
   });
   worker.onmessage = (ev) => onWorkerMessage(ev.data);
@@ -188,6 +203,7 @@ function spawnWorker(src) {
 
   if (src) requestSwap(src);
   if (paused) send({ type: "clock", paused: true });
+  if (currentSpeed !== 1) send({ type: "clock", speed: currentSpeed });
 }
 
 function onWorkerMessage(msg) {
@@ -203,14 +219,17 @@ function onWorkerMessage(msg) {
       break;
     case "swapped": {
       const sent = swapSrcById.get(msg.id);
+      const wasRevive = reviveIds.delete(msg.id);
       swapSrcById.delete(msg.id);
       if (msg.ok && sent !== undefined) {
         lastGoodSrc = sent;
-        // Only clear the error state if the badge now runs what's on screen.
-        if (sent === editor.state.doc.toString()) {
+        // A revive re-runs code that just crashed: keep the pinned error so
+        // the user can still see why. Editor swaps clear it if the badge now
+        // runs exactly what's on screen.
+        if (!wasRevive && sent === editor.state.doc.toString()) {
           clearRuntimeError(editor);
           setStale(false);
-        } else {
+        } else if (!wasRevive) {
           setStale(true);
         }
       } else if (!msg.ok) {
@@ -229,7 +248,7 @@ function onWorkerMessage(msg) {
         // code itself has a delayed bug.
         if (lastGoodSrc && Date.now() - lastAutoRevive > 3000) {
           lastAutoRevive = Date.now();
-          requestSwap(lastGoodSrc);
+          requestSwap(lastGoodSrc, { revive: true });
         }
       }
       break;
@@ -246,6 +265,7 @@ function onWorkerMessage(msg) {
       break;
     case "pong":
       lastPong = performance.now();
+      pongPending = false;
       break;
     case "fatal":
       bootStatus("badge failed to boot — see console panel", true);
@@ -255,17 +275,26 @@ function onWorkerMessage(msg) {
 }
 
 function startWatchdog() {
+  // Reboot only when a ping actually went unanswered. Judging by "time since
+  // last pong" would false-positive in hidden tabs, where browsers throttle
+  // this interval to once a minute but the worker still answers instantly.
   setInterval(() => {
     if (!workerReady) return;
-    send({ type: "ping", id: Date.now() });
-    if (performance.now() - lastPong > 4000) {
-      logConsole("⟳ badge stopped responding (infinite loop?) — rebooting", "err");
-      // Reboot with the last ACCEPTED code, not the wedged editor text.
-      if (lastGoodSrc && editor.state.doc.toString() !== lastGoodSrc) {
-        setStale(true);
+    if (pongPending) {
+      if (performance.now() - lastPingAt > 4000) {
+        pongPending = false;
+        logConsole("⟳ badge stopped responding (infinite loop?) — rebooting", "err");
+        // Reboot with the last ACCEPTED code, not the wedged editor text.
+        if (lastGoodSrc && editor.state.doc.toString() !== lastGoodSrc) {
+          setStale(true);
+        }
+        spawnWorker(lastGoodSrc);
       }
-      spawnWorker(lastGoodSrc);
+      return;
     }
+    pongPending = true;
+    lastPingAt = performance.now();
+    send({ type: "ping", id: lastPingAt });
   }, 1000);
 }
 
@@ -276,25 +305,17 @@ function setStale(stale) {
 // ---------------------------------------------------------------------------
 // Console panel
 // ---------------------------------------------------------------------------
-const consoleLines = [];
 function logConsole(text, stream) {
+  const pre = $("#console-log");
   for (const line of String(text).split("\n")) {
     if (!line.trim()) continue;
-    consoleLines.push({ line, stream });
+    const span = document.createElement("span");
+    span.className = stream === "err" ? "c-err" : "c-out";
+    span.textContent = line + "\n";
+    pre.appendChild(span);
   }
-  while (consoleLines.length > 300) consoleLines.shift();
-  const pre = $("#console-log");
-  pre.innerHTML = consoleLines
-    .map(
-      (l) =>
-        `<span class="${l.stream === "err" ? "c-err" : "c-out"}">${escapeHtml(l.line)}</span>`
-    )
-    .join("\n");
+  while (pre.childNodes.length > 300) pre.removeChild(pre.firstChild);
   pre.scrollTop = pre.scrollHeight;
-}
-
-function escapeHtml(s) {
-  return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
 }
 
 // ---------------------------------------------------------------------------
@@ -316,6 +337,7 @@ function bindTransport() {
   const speed = $("#speed");
   speed.addEventListener("input", () => {
     const s = Math.pow(10, parseFloat(speed.value));
+    currentSpeed = s;
     $("#speed-label").textContent = `${s.toFixed(s < 1 ? 2 : 1)}×`;
     send({ type: "clock", speed: s });
   });
@@ -325,7 +347,9 @@ function bindTransport() {
 // Demo gallery
 // ---------------------------------------------------------------------------
 async function loadManifest() {
-  manifest = await (await fetch("demos/demos.json")).json();
+  const res = await fetch("demos/demos.json");
+  if (!res.ok) throw new Error(`${res.status} loading demos.json`);
+  manifest = await res.json();
   const nav = $("#demo-chips");
   for (const demo of manifest) {
     const chip = document.createElement("button");
@@ -341,15 +365,21 @@ async function loadManifest() {
   }
 }
 
+let switchSeq = 0;
+
 async function switchDemo(id) {
   const demo = manifest.find((d) => d.id === id) || manifest[0];
   if (!demo) return;
+  const token = ++switchSeq;
   currentDemo = demo.id;
   document.title = `${demo.title} · Tildagon live playground`;
   for (const chip of document.querySelectorAll(".chip")) {
     chip.classList.toggle("active", chip.dataset.id === demo.id);
   }
-  const src = await (await fetch(`demos/${demo.id}.py`)).text();
+  const res = await fetch(`demos/${demo.id}.py`);
+  if (!res.ok) throw new Error(`${res.status} loading demo ${demo.id}`);
+  const src = await res.text();
+  if (token !== switchSeq) return; // a newer switch overtook this fetch
   // replaceDoc triggers the editor's change listener, which swaps the app —
   // same live path as typing. Nothing to reload, ever.
   replaceDoc(editor, src);

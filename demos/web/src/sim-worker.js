@@ -16,10 +16,16 @@
 const post = (msg) => self.postMessage(msg);
 const progress = (stage) => post({ type: "progress", stage });
 
+// Injected by esbuild --define at build time; busts caches that ignore
+// no-store (some proxies, some embedded browsers) whenever dist is rebuilt.
+const BUILD = typeof __BUILD_ID__ === "string" ? __BUILD_ID__ : "dev";
+
 // ---------------------------------------------------------------------------
 // State shared with the Python side through `chost`
 // ---------------------------------------------------------------------------
-const input = { buttons: 0, ax: 0, ay: 0 };
+// pendingDown latches presses shorter than one Python poll interval (30 ms —
+// a fast tap or a synthetic click would otherwise vanish between polls).
+const input = { buttons: 0, pendingDown: 0, ax: 0, ay: 0 };
 const vclock = { vms: 0, last: 0, speed: 1, paused: false };
 
 function nowMs() {
@@ -38,8 +44,8 @@ let lastFps = 0;
 // ctx.wasm — minimal WASI shim (verified: only clock/environ ever called)
 // ---------------------------------------------------------------------------
 async function loadCtxWasm() {
-  const url = new URL("./ctx.wasm", self.location.href);
-  const bytes = await (await fetch(url)).arrayBuffer();
+  const resp = await fetchOk("./ctx.wasm");
+  const bytes = await resp.arrayBuffer();
 
   let memory = null;
   const dv = () => new DataView(memory.buffer);
@@ -104,11 +110,17 @@ function makeChost(wasm, pyodideFS) {
   const mem = () => new Uint8Array(e.memory.buffer);
   const enc = new TextEncoder();
   const imageDataCache = new Map(); // fbPtr -> ImageData (memory can't grow)
-  const textureCache = new Map(); // path -> eid
+  const pixelCache = new Map(); // path -> {img, iw, ih} decoded pixels in wasm heap
+
+  function alloc(n) {
+    const p = e.malloc(n);
+    if (!p) throw new Error(`ctx.wasm out of memory (malloc(${n}))`);
+    return p;
+  }
 
   function writeCString(s) {
     const bytes = enc.encode(s);
-    const p = e.malloc(bytes.length + 1);
+    const p = alloc(bytes.length + 1);
     mem().set(bytes, p);
     mem()[p + bytes.length] = 0;
     return [p, bytes.length + 1];
@@ -139,7 +151,7 @@ function makeChost(wasm, pyodideFS) {
 
     defineTexture(ctxPtr, eid, w, h, stride, fmt, bufPtr) {
       const [p] = writeCString(eid);
-      const retEid = e.malloc(65);
+      const retEid = alloc(65);
       e.ctx_define_texture(ctxPtr, p, w, h, stride, fmt, bufPtr, retEid);
       const actual = readCString(retEid, 65);
       e.free(retEid);
@@ -155,14 +167,16 @@ function makeChost(wasm, pyodideFS) {
 
     image(ctxPtr, path, x, y, w, h) {
       // Decode a MEMFS image via stb inside ctx.wasm, then draw it. Matches
-      // upstream fakes/ctx.py image() (including its pass-through of stb's
-      // straight alpha — the badge renderer treats it as premultiplied).
-      let eid = textureCache.get(path);
-      if (!eid) {
+      // upstream fakes/ctx.py image(): decoded PIXELS are cached, but the
+      // texture is (re)defined on every call — textures are serialized into
+      // the target drawlist, so caching the eid across drawlists (e.g. after
+      // a probe frame that is destroyed unrendered) would blank the image.
+      let px = pixelCache.get(path);
+      if (!px) {
         const data = pyodideFS().readFile(path); // Uint8Array
-        const buf = e.malloc(data.length);
+        const buf = alloc(data.length);
         mem().set(data, buf);
-        const wh = e.malloc(12);
+        const wh = alloc(12);
         const img = e.stbi_load_from_memory(buf, data.length, wh, wh + 4, wh + 8, 4);
         const dvw = new DataView(e.memory.buffer);
         const iw = dvw.getUint32(wh, true);
@@ -170,9 +184,12 @@ function makeChost(wasm, pyodideFS) {
         e.free(wh);
         e.free(buf);
         if (!img) throw new Error(`stb could not decode ${path}`);
-        eid = this.defineTexture(ctxPtr, path, iw, ih, iw * 4, 4 /* RGBA8 */, img);
-        textureCache.set(path, eid);
+        px = { img, iw, ih };
+        pixelCache.set(path, px);
       }
+      const eid = this.defineTexture(
+        ctxPtr, path, px.iw, px.ih, px.iw * 4, 4 /* RGBA8 */, px.img
+      );
       const [p] = writeCString(eid);
       e.ctx_draw_texture(ctxPtr, p, x, y, w, h);
       e.free(p);
@@ -197,7 +214,11 @@ function makeChost(wasm, pyodideFS) {
       post({ type: "leds", colors });
     },
 
-    buttons: () => input.buttons,
+    buttons: () => {
+      const bits = input.buttons | input.pendingDown;
+      input.pendingDown = 0;
+      return bits;
+    },
     acc: (i) => (i === 0 ? input.ax : input.ay),
     nowMs,
 
@@ -215,15 +236,18 @@ let swapFn = null;
 let resetFn = null;
 const preReadyQueue = [];
 
+async function fetchOk(rel) {
+  const url = new URL(`${rel}?b=${BUILD}`, self.location.href);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${r.status} fetching ${url.pathname}`);
+  return r;
+}
+
 async function boot() {
   progress("loading badge renderer (ctx.wasm)");
   const wasmPromise = loadCtxWasm();
-  const treePromise = fetch(new URL("./badge-tree.zip", self.location.href)).then(
-    (r) => r.arrayBuffer()
-  );
-  const bootPyPromise = fetch(new URL("./boot.py", self.location.href)).then((r) =>
-    r.text()
-  );
+  const treePromise = fetchOk("./badge-tree.zip").then((r) => r.arrayBuffer());
+  const bootPyPromise = fetchOk("./boot.py").then((r) => r.text());
 
   progress("loading Python (Pyodide)");
   const { loadPyodide } = await import(
@@ -299,6 +323,7 @@ function handle(msg) {
       }
       break;
     case "buttons":
+      input.pendingDown |= msg.bits & ~input.buttons;
       input.buttons = msg.bits;
       break;
     case "acc":

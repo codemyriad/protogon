@@ -164,15 +164,18 @@ def display_update(subctx):
 
     fbp, c = fbm.get()
     if fbp is None:
+        ctx._wasm.ctx_destroy(subctx._ctx)
         return
 
-    ctx._wasm.ctx_render_ctx(subctx._ctx, c)
-    ctx._wasm.ctx_destroy(subctx._ctx)
-
-    fbm.draw(fbp)
-    chost.blit(fbm.get_output(fbp)[0])
-
-    fbm.put(fbp, c)
+    # Always return the (single) framebuffer to the pool: losing it to an
+    # exception would freeze the screen for the rest of the session.
+    try:
+        ctx._wasm.ctx_render_ctx(subctx._ctx, c)
+        ctx._wasm.ctx_destroy(subctx._ctx)
+        fbm.draw(fbp)
+        chost.blit(fbm.get_output(fbp)[0])
+    finally:
+        fbm.put(fbp, c)
 
 
 def get_button_state(left):
