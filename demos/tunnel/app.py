@@ -1,4 +1,4 @@
-# faiv (5) -- Polar tunnel. A stack of concentric rings breathes and drifts
+# tunnel (5) -- Polar tunnel. A stack of concentric rings breathes and drifts
 # until flat circles read as a 3D tunnel you are flying down.
 #
 # HOW IT WORKS
@@ -9,10 +9,12 @@
 #   but the small far-away rings drift the most while the big nearest
 #   ring barely moves. Your brain sees that mismatch and says "tunnel".
 #
+# PRIOR ART  the demoscene tunnel effect -- https://en.wikipedia.org/wiki/Demo_effect
+#
 # BUTTONS   LEFT/RIGHT cycle colour scheme - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py faiv --gif
-#   badge: drop demos/faiv into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py tunnel --gif
+#   badge: drop demos/tunnel into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -46,7 +48,7 @@ def tinted(glow, tint):
             min(1.0, glow * tint[2]))
 
 
-class Faiv(app.App):
+class Tunnel(app.App):
     """Keep time, cycle colour schemes, draw the breathing ring stack."""
 
     def __init__(self, config=None):
@@ -95,7 +97,7 @@ class Faiv(app.App):
         ctx.restore()
 
 
-__app_export__ = Faiv
+__app_export__ = Tunnel
 
 # ------------------------------ try this --------------------------------------
 # - set WANDER to 0.0 -- the drift stops and you get pure breathing rings

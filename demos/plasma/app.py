@@ -1,4 +1,4 @@
-# nain (9) -- Plasma tiles. Four drifting sine waves add up to paint a 16x16
+# plasma (9) -- Plasma tiles. Four drifting sine waves add up to paint a 16x16
 # tile grid -- the classic demoscene plasma, no per-pixel framebuffer needed.
 #
 # HOW IT WORKS
@@ -8,10 +8,12 @@
 #   centre. Where crests pile up a tile glows hot; where waves cancel it
 #   goes cold. A palette turns hot-and-cold into colour -- that's plasma.
 #
+# PRIOR ART  the demoscene plasma effect -- https://en.wikipedia.org/wiki/Plasma_effect
+#
 # BUTTONS   LEFT/RIGHT swap palette - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py nain --gif
-#   badge: drop demos/nain into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py plasma --gif
+#   badge: drop demos/plasma into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -65,7 +67,7 @@ def rainbow(v):
 PALETTES = (fire, ocean, rainbow)
 
 
-class Nain(app.App):
+class Plasma(app.App):
     """Keep time, listen for palette swaps, paint the tile grid."""
 
     def __init__(self, config=None):
@@ -110,7 +112,7 @@ class Nain(app.App):
         ctx.restore()
 
 
-__app_export__ = Nain
+__app_export__ = Plasma
 
 # ------------------------------ try this --------------------------------------
 # - set WAVE_X, WAVE_Y and WAVE_DIAG all to 0.0: the sliding waves go flat and

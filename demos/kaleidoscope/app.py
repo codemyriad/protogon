@@ -1,4 +1,4 @@
-# sics (6) -- Hex kaleidoscope. One tiny random doodle, stamped and mirrored
+# kaleidoscope (6) -- Hex kaleidoscope. One tiny random doodle, stamped and mirrored
 # N times around the centre -- instant snowflake.
 #
 # HOW IT WORKS
@@ -8,10 +8,13 @@
 #   centre, and stamp a flipped twin each time so the wedges mirror like
 #   glass. The doodle is random; the symmetry is what makes it beautiful.
 #
+# PRIOR ART  the kaleidoscope, invented by David Brewster in 1817 --
+#            https://en.wikipedia.org/wiki/Kaleidoscope
+#
 # BUTTONS   CONFIRM new random doodle - RIGHT/LEFT change symmetry - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py sics --gif
-#   badge: drop demos/sics into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py kaleidoscope --gif
+#   badge: drop demos/kaleidoscope into the official simulator's sim/apps/ (see README)
 import app
 import math
 import random
@@ -52,7 +55,7 @@ def rainbow(h):
     return (1.0, 0.0, q)
 
 
-class Sics(app.App):
+class Kaleidoscope(app.App):
     """Roll a random doodle, then let rotational symmetry do the beauty."""
 
     def __init__(self, config=None):
@@ -123,7 +126,7 @@ class Sics(app.App):
         ctx.restore()
 
 
-__app_export__ = Sics
+__app_export__ = Kaleidoscope
 
 # ------------------------------ try this --------------------------------------
 # - drag the 12 in SYMMETRIES up to 24, press RIGHT until it's live: lace doily

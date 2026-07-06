@@ -1,4 +1,4 @@
-# eit (8) -- Matrix rain, round-cropped. Glyph columns fall with bright heads
+# matrixrain (8) -- Matrix rain, round-cropped. Glyph columns fall with bright heads
 # and fading tails; RIGHT cycles the colour.
 #
 # HOW IT WORKS
@@ -9,10 +9,13 @@
 #   bottom? (then restart above the top with a fresh speed and tail length).
 #   Letters that would land outside the round glass are simply not drawn.
 #
+# PRIOR ART  the Matrix digital rain (The Matrix, 1999) --
+#            https://en.wikipedia.org/wiki/Matrix_digital_rain
+#
 # BUTTONS   RIGHT/LEFT cycle the colour - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py eit --gif
-#   badge: drop demos/eit into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py matrixrain --gif
+#   badge: drop demos/matrixrain into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES
@@ -46,7 +49,7 @@ def new_column(x, head_y):
             "glyphs": [random.choice(GLYPHS) for _ in range(20)]}
 
 
-class Eit(app.App):
+class Matrixrain(app.App):
     """Move every column down a little, flicker a letter, redraw the rain."""
 
     def __init__(self, config=None):
@@ -106,7 +109,7 @@ class Eit(app.App):
         ctx.restore()
 
 
-__app_export__ = Eit
+__app_export__ = Matrixrain
 
 # ------------------------------ try this --------------------------------------
 # - set GLYPHS = "01" for binary rain, or spell something: "EMF2026 "

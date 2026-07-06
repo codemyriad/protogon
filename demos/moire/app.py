@@ -1,4 +1,4 @@
-# ciu (2) -- Moire rings. Two families of thin rings drift past each other with
+# moire (2) -- Moire rings. Two families of thin rings drift past each other with
 # a slight phase mismatch; the interference does the work, not the code.
 #
 # HOW IT WORKS
@@ -9,10 +9,12 @@
 #   is a moire: you've seen it where two fences overlap, or when a striped
 #   shirt shimmers on TV.
 #
+# PRIOR ART  moire interference patterns -- https://en.wikipedia.org/wiki/Moir%C3%A9_pattern
+#
 # BUTTONS   RIGHT or LEFT swap circles <-> hexagons - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py ciu --gif
-#   badge: drop demos/ciu into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py moire --gif
+#   badge: drop demos/moire into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -52,7 +54,7 @@ def polygon_ring(ctx, cx, cy, radius, spin):
     ctx.stroke()
 
 
-class Ciu(app.App):
+class Moire(app.App):
     """Keep time, flip shapes on RIGHT, draw the two mirrored ring families."""
 
     def __init__(self, config=None):
@@ -106,7 +108,7 @@ class Ciu(app.App):
         ctx.restore()
 
 
-__app_export__ = Ciu
+__app_export__ = Moire
 
 # ------------------------------ try this --------------------------------------
 # - set STAGGER to 0.0: each family snaps into a rigid bullseye, and you get

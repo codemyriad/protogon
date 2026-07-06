@@ -1,4 +1,4 @@
-# twelv (12) -- Cellular playground. A wrap-around grid where every cell obeys
+# cellular (12) -- Cellular playground. A wrap-around grid where every cell obeys
 # one tiny neighbour rule: Life, Brian's Brain, or cyclic.
 #
 # HOW IT WORKS
@@ -8,10 +8,14 @@
 #   tire, rest -- rest ignites beside exactly 2 sparks. CYCLIC: four colours,
 #   each eating the one before it. Nobody plans it; patterns grow themselves.
 #
+# PRIOR ART  Conway's Game of Life -- https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+#            Brian's Brain -- https://en.wikipedia.org/wiki/Brian%27s_Brain
+#            cyclic CA -- https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
+#
 # BUTTONS   RIGHT/LEFT next rule - CONFIRM fresh random seed - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py twelv --gif
-#   badge: drop demos/twelv into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py cellular --gif
+#   badge: drop demos/cellular into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES
@@ -58,7 +62,7 @@ CYCLE_COLOURS = ((1.0, 0.3, 0.2), (0.9, 0.8, 0.2),    # cyclic's four tribes:
                  (0.2, 0.8, 0.5), (0.3, 0.4, 1.0))    # red yellow green blue
 
 
-class Twelv(app.App):
+class Cellular(app.App):
     """Count frames, step the world every few, paint every living cell."""
 
     def __init__(self, config=None):
@@ -138,7 +142,7 @@ class Twelv(app.App):
         ctx.restore()
 
 
-__app_export__ = Twelv
+__app_export__ = Cellular
 
 # ------------------------------ try this --------------------------------------
 # - in reseed(), swap `1 if random.random() < SEED else 0` for

@@ -7,7 +7,7 @@ working version while the error is pinned to the offending line. Drag any
 number literal to scrub it. Pause badge time and edits re-render the frozen
 frame.
 
-Every page is one demo: `/#uan`, `/#ten`, … The chips at the top switch
+Every page is one demo: `/#tixy`, `/#ledring`, … The chips at the top switch
 between all fourteen.
 
 ## Run it

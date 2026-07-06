@@ -1,4 +1,4 @@
-# for (4) -- IMU starfield. Stars fly toward you; tilt the badge to steer the
+# starfield (4) -- IMU starfield. Stars fly toward you; tilt the badge to steer the
 # drift, and the LED ring lights the way you lean.
 #
 # HOW IT WORKS
@@ -9,10 +9,13 @@
 #   and are recycled at the back. Tilting the badge shoves the whole field
 #   sideways -- that is how you steer.
 #
+# PRIOR ART  the classic perspective-starfield demo effect (and the old Windows
+#            "Starfield Simulation" screensaver) -- https://en.wikipedia.org/wiki/Demo_effect
+#
 # BUTTONS   tilt steers (W/A/S/D in the sim) - UP/DOWN warp speed - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py for --gif
-#   badge: drop demos/for into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py starfield --gif
+#   badge: drop demos/starfield into the official simulator's sim/apps/ (see README)
 import app
 import math
 import random
@@ -45,7 +48,7 @@ def read_tilt():
             max(-1.0, min(1.0, ay / 6.0)))
 
 
-class For(app.App):
+class Starfield(app.App):
     """Fly a field of [x, y, depth] stars; tilt drifts them sideways."""
 
     def __init__(self, config=None):
@@ -133,7 +136,7 @@ class For(app.App):
         ctx.restore()
 
 
-__app_export__ = For
+__app_export__ = Starfield
 
 # ------------------------------ try this --------------------------------------
 # - drag FOV down to 40.0: the field huddles into a snow globe; now push it

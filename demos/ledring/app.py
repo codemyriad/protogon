@@ -1,4 +1,4 @@
-# ten (10) -- LED / display phase-lock. Twelve dots on the glass sit at the
+# ledring (10) -- LED / display phase-lock. Twelve dots on the glass sit at the
 # same angles as the 12 bezel LEDs; one shared phase animates both in lockstep.
 #
 # HOW IT WORKS
@@ -10,8 +10,8 @@
 #
 # BUTTONS   LEFT/RIGHT cycle comet -> pulse -> rainbow - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py ten --gif
-#   badge: drop demos/ten into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py ledring --gif
+#   badge: drop demos/ledring into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -58,7 +58,7 @@ def led_angle(i):
     return -math.pi / 2 + i * (TAU / 12)
 
 
-class Ten(app.App):
+class Ledring(app.App):
     """One phase, twelve colours, two outputs: the LEDs and the screen."""
 
     def __init__(self, config=None):
@@ -134,7 +134,7 @@ class Ten(app.App):
         ctx.restore()
 
 
-__app_export__ = Ten
+__app_export__ = Ledring
 
 # ------------------------------ try this --------------------------------------
 # - in pulse mode, drag the 0.0 in "i * 0.0" up to 0.5: the shared heartbeat

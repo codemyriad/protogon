@@ -1,4 +1,4 @@
-# tri (3) -- Qix tracer. Bouncing points drag fading afterimages behind them.
+# qix (3) -- Qix tracer. Bouncing points drag fading afterimages behind them.
 #
 # HOW IT WORKS
 #   A few points fly around, bouncing off the walls of an invisible box.
@@ -7,10 +7,12 @@
 #   new ones bright and thick. No blur trick: the trail is just yesterday's
 #   shapes politely fading away. The 12 LED ring breathes the head colour.
 #
+# PRIOR ART  Qix, the 1981 Taito arcade game -- https://en.wikipedia.org/wiki/Qix
+#
 # BUTTONS   CONFIRM add a point (2->3->4) - RIGHT/LEFT palette - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py tri --gif
-#   badge: drop demos/tri into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py qix --gif
+#   badge: drop demos/qix into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -39,7 +41,7 @@ def hue(h):
             (0.0, 1.0 - f, 1.0), (f, 0.0, 1.0), (1.0, 0.0, 1.0 - f))[i % 6]
 
 
-class Tri(app.App):
+class Qix(app.App):
     """Move the points, remember their shape, draw the memories fading."""
 
     def __init__(self, config=None):
@@ -137,7 +139,7 @@ class Tri(app.App):
         ctx.restore()
 
 
-__app_export__ = Tri
+__app_export__ = Qix
 
 # ------------------------------ try this --------------------------------------
 # - drag TRAIL to 80 and SPEED_MAX to 300.0 -- long ribbons whip around the box

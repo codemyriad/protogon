@@ -1,4 +1,4 @@
-# thurteen (13) -- Drift lines. Wavy anchor points threaded into smooth spline
+# ribbons (13) -- Drift lines. Wavy anchor points threaded into smooth spline
 # ribbons; a few phase-shifted copies braid together.
 #
 # HOW IT WORKS
@@ -9,10 +9,12 @@
 #   anchor and glides through the midpoint beyond it, the classic trick for
 #   a spline with no kinks. Copies with the wave shifted along braid together.
 #
+# PRIOR ART  in the spirit of the old "Mystify" screensaver ribbons
+#
 # BUTTONS   RIGHT/LEFT change how many ribbons braid - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py thurteen --gif
-#   badge: drop demos/thurteen into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py ribbons --gif
+#   badge: drop demos/ribbons into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -48,7 +50,7 @@ def anchor_points(t, phase):
     return pts
 
 
-class Thurteen(app.App):
+class Ribbons(app.App):
     """Keep time, listen to buttons, drift the anchors, thread the ribbons."""
 
     def __init__(self, config=None):
@@ -98,7 +100,7 @@ class Thurteen(app.App):
         ctx.restore()
 
 
-__app_export__ = Thurteen
+__app_export__ = Ribbons
 
 # ------------------------------ try this --------------------------------------
 # - drag SWAY to 110.0 and THICKNESS to 6.0 -- fat ribbons that fill the badge

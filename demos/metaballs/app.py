@@ -1,4 +1,4 @@
-# forteen (14) -- Orbiting metaballs (lite). Glowing blobs circle the centre
+# metaballs (14) -- Orbiting metaballs (lite). Glowing blobs circle the centre
 # and seem to melt together wherever their halos overlap.
 #
 # HOW IT WORKS
@@ -9,10 +9,13 @@
 #   bright bridge between them -- your eye reads it as goo merging.
 #   Each blob follows its own slightly detuned orbit, so they keep meeting.
 #
+# PRIOR ART  metaballs, invented by Jim Blinn for Carl Sagan's Cosmos --
+#            https://en.wikipedia.org/wiki/Metaballs
+#
 # BUTTONS   RIGHT/LEFT change blob count (3-5) - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py forteen --gif
-#   badge: drop demos/forteen into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py metaballs --gif
+#   badge: drop demos/metaballs into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -45,7 +48,7 @@ def draw_blob(ctx, x, y, colour):
         ctx.arc(x, y, radius, 0, TAU, True).fill()
 
 
-class Forteen(app.App):
+class Metaballs(app.App):
     """Move each blob along its wobbly orbit, then paint the disc stacks."""
 
     def __init__(self, config=None):
@@ -90,7 +93,7 @@ class Forteen(app.App):
         ctx.restore()
 
 
-__app_export__ = Forteen
+__app_export__ = Metaballs
 
 # ------------------------------ try this --------------------------------------
 # - drag SWAY up to 60: the blobs dive right through the middle and pile

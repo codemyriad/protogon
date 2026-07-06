@@ -1,4 +1,4 @@
-# ileven (11) -- Pipes grower. A head walks a hidden grid laying colourful
+# pipes (11) -- Pipes grower. A head walks a hidden grid laying colourful
 # pipes with random turns, like the classic screensaver. CONFIRM clears.
 #
 # HOW IT WORKS
@@ -9,10 +9,13 @@
 #   the next colour. Once most of the board is pipe, everything wipes clean
 #   and the plumbing begins again.
 #
+# PRIOR ART  the Windows NT "3D Pipes" screensaver --
+#            https://devblogs.microsoft.com/oldnewthing/20240611-00/?p=109881
+#
 # BUTTONS   CONFIRM clears the board - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py ileven --gif
-#   badge: drop demos/ileven into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py pipes --gif
+#   badge: drop demos/pipes into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES
@@ -40,7 +43,7 @@ def cell_centre(cell):
     return (off + cell[0] * CELL, off + cell[1] * CELL)
 
 
-class Ileven(app.App):
+class Pipes(app.App):
     """Grow pipes cell by cell; draw the finished runs and the bright head."""
 
     def __init__(self, config=None):
@@ -129,7 +132,7 @@ class Ileven(app.App):
         ctx.restore()
 
 
-__app_export__ = Ileven
+__app_export__ = Pipes
 
 # ------------------------------ try this --------------------------------------
 # - drag STRAIGHT to 0.0: the head coin-flips at every cell and scribbles;

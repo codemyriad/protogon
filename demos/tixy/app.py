@@ -1,4 +1,4 @@
-# uan (1) -- Tixy grid. One tiny formula drives a 16x16 field of dots; the sign
+# tixy (1) -- Tixy grid. One tiny formula drives a 16x16 field of dots; the sign
 # picks warm/cool, the magnitude picks size. After tixy.land.
 #
 # HOW IT WORKS
@@ -9,10 +9,12 @@
 #       close to 0 -> tiny dot       close to 1 -> big dot
 #   That's the whole machine. Five formulas are included -- write your own.
 #
+# PRIOR ART  tixy.land by Martin Kleppe (@aemkei) -- https://tixy.land
+#
 # BUTTONS   LEFT/RIGHT swap formula - UP/DOWN change speed - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py uan --gif
-#   badge: drop demos/uan into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py tixy --gif
+#   badge: drop demos/tixy into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -58,7 +60,7 @@ FORMULAS = (waves, spin, ripple, plaid, bloom)
 NAMES = ("waves", "spin", "ripple", "plaid", "bloom")
 
 
-class Uan(app.App):
+class Tixy(app.App):
     """Keep time, listen to buttons, ask the formula, draw the dots."""
 
     def __init__(self, config=None):
@@ -120,7 +122,7 @@ class Uan(app.App):
         ctx.restore()
 
 
-__app_export__ = Uan
+__app_export__ = Tixy
 
 # ------------------------------ try this --------------------------------------
 # - drag the 7.5 in ripple() sideways and watch the splash centre follow you

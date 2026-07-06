@@ -7,7 +7,7 @@
 //   @codemirror/lang-python@6.2.1  @codemirror/theme-one-dark@6.1.3
 
 import {basicSetup} from "codemirror";
-import {EditorView, ViewPlugin, Decoration} from "@codemirror/view";
+import {EditorView, ViewPlugin, Decoration, WidgetType} from "@codemirror/view";
 import {EditorState, Transaction} from "@codemirror/state";
 import {python} from "@codemirror/lang-python";
 import {oneDark} from "@codemirror/theme-one-dark";
@@ -180,6 +180,193 @@ const scrubDragHandler = EditorView.domEventHandlers({
 export const scrubbableNumbers = [scrubHighlighter, scrubTheme, scrubDragHandler];
 
 // ---------------------------------------------------------------------------
+// 1b. Colour swatches
+//
+// Three number literals that form a colour — ctx.rgb(r, g, b) /
+// ctx.rgba(r, g, b, a) arguments, or a bare (r, g, b) tuple with every value
+// in 0..1 — get a clickable swatch. Clicking opens the native colour picker;
+// picking rewrites the three literals live (same fast path as scrubbing).
+// ---------------------------------------------------------------------------
+
+// Collect [{from, to, text}] for the leading three plain Number children of
+// a node, or null. exact3: the node must contain exactly three values
+// (a bare colour tuple); otherwise only the first three must be numbers
+// (rgb/rgba args — alpha may be a variable).
+function colorNumbers(state, node, exact3) {
+  const kids = [];
+  for (let child = node.firstChild; child; child = child.nextSibling) {
+    if (child.name === "(" || child.name === ")" || child.name === ",") continue;
+    kids.push(child);
+  }
+  if (exact3 ? kids.length !== 3 : kids.length < 3) return null;
+  const three = kids.slice(0, 3);
+  if (!three.every((k) => k.name === "Number")) return null;
+  const nums = three.map((k) => ({from: k.from, to: k.to,
+                                  text: state.sliceDoc(k.from, k.to)}));
+  for (const n of nums) {
+    if (!/^\d+(\.\d+)?$/.test(n.text)) return null;
+    if (parseFloat(n.text) > 1.0) return null;
+  }
+  return nums;
+}
+
+// Find colour groups in the visible ranges: {pos, nums, hex}
+function findColorGroups(view) {
+  const groups = [];
+  const {state} = view;
+  for (const {from, to} of view.visibleRanges) {
+    syntaxTree(state).iterate({
+      from, to,
+      enter(node) {
+        let nums = null;
+        if (node.name === "ArgList") {
+          const call = node.node.parent;
+          if (!call || call.name !== "CallExpression") return;
+          const callee = state.sliceDoc(call.from, node.from);
+          if (!/\.(rgb|rgba)$/.test(callee)) return;
+          nums = colorNumbers(state, node.node, false);
+        } else if (node.name === "TupleExpression") {
+          nums = colorNumbers(state, node.node, true);
+        }
+        if (!nums) return;
+        const hex = "#" + nums.map((n) => {
+          const v = Math.round(Math.min(1, Math.max(0, parseFloat(n.text))) * 255);
+          return v.toString(16).padStart(2, "0");
+        }).join("");
+        groups.push({pos: nums[0].from, nums, hex});
+      },
+    });
+  }
+  return groups;
+}
+
+function formatChannel(v) {
+  let s = v.toFixed(2);
+  if (s.endsWith("0")) s = s.slice(0, -1);   // "1.00" -> "1.0", "0.50" -> "0.5"
+  return s;
+}
+
+class SwatchWidget extends WidgetType {
+  constructor(hex, nums) {
+    super();
+    this.hex = hex;
+    this.nums = nums;
+  }
+
+  eq(other) {
+    return other.hex === this.hex && other.nums[0].from === this.nums[0].from;
+  }
+
+  toDOM(view) {
+    const el = document.createElement("span");
+    el.className = "cm-color-swatch";
+    el.style.background = this.hex;
+    el.title = "pick a colour";
+    el.addEventListener("mousedown", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openPicker(view, el, this.hex, this.nums);
+    });
+    return el;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+function openPicker(view, anchor, hex, nums) {
+  const input = document.createElement("input");
+  input.type = "color";
+  input.className = "cm-color-input";
+  input.value = hex;
+  const rect = anchor.getBoundingClientRect();
+  input.style.position = "fixed";
+  input.style.left = rect.left + "px";
+  input.style.top = rect.bottom + "px";
+  input.style.opacity = "0";
+  input.style.width = "1px";
+  input.style.height = "1px";
+  document.body.appendChild(input);
+
+  // Track each literal's live range: lengths change as we rewrite them.
+  const current = nums.map((n) => ({from: n.from, text: n.text}));
+  const original = nums.map((n) => n.text);
+
+  const docMoved = () =>
+    current.some((c) =>
+      c.from + c.text.length > view.state.doc.length ||
+      view.state.sliceDoc(c.from, c.from + c.text.length) !== c.text);
+
+  // Replace the three literals in one transaction and update the tracked
+  // ranges (CodeMirror maps the simultaneous changes; only lengths shift).
+  const rewrite = (texts, withHistory) => {
+    if (docMoved()) return false;
+    const spec = {
+      changes: current.map((c, i) => ({
+        from: c.from,
+        to: c.from + c.text.length,
+        insert: texts[i],
+      })),
+      userEvent: "input.scrub",
+    };
+    if (!withHistory) spec.annotations = Transaction.addToHistory.of(false);
+    view.dispatch(spec);
+    let shift = 0;
+    for (let i = 0; i < 3; i++) {
+      current[i].from += shift;
+      shift += texts[i].length - current[i].text.length;
+      current[i].text = texts[i];
+    }
+    return true;
+  };
+
+  const hexToTexts = (value) =>
+    [1, 3, 5].map((i) => formatChannel(parseInt(value.slice(i, i + 2), 16) / 255));
+
+  input.addEventListener("input", () => rewrite(hexToTexts(input.value), false));
+  input.addEventListener("change", () => {
+    // Collapse the whole picking session into one undoable change: silently
+    // restore the originals, then re-apply the final colour WITH history.
+    if (current.some((c, i) => c.text !== original[i])) {
+      const finals = current.map((c) => c.text);
+      if (rewrite(original.slice(), false)) rewrite(finals, true);
+    }
+    input.remove();
+  });
+  // click() must run in the user gesture
+  input.click();
+}
+
+const swatchPlugin = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = this.compute(view); }
+  update(u) {
+    if (u.docChanged || u.viewportChanged) this.decorations = this.compute(u.view);
+  }
+  compute(view) {
+    const widgets = findColorGroups(view).map((g) =>
+      Decoration.widget({widget: new SwatchWidget(g.hex, g.nums), side: -1})
+        .range(g.pos));
+    return Decoration.set(widgets, true);
+  }
+}, {decorations: (v) => v.decorations});
+
+const swatchTheme = EditorView.baseTheme({
+  ".cm-color-swatch": {
+    display: "inline-block",
+    width: "0.85em",
+    height: "0.85em",
+    borderRadius: "3px",
+    border: "1px solid rgba(255,255,255,0.4)",
+    marginRight: "5px",
+    verticalAlign: "-0.1em",
+    cursor: "pointer",
+  },
+});
+
+export const colorSwatches = [swatchPlugin, swatchTheme];
+
+// ---------------------------------------------------------------------------
 // 2. Editor construction + live-run plumbing
 // ---------------------------------------------------------------------------
 
@@ -195,6 +382,7 @@ export function createEditor({parent, doc, onChange, debounceMs = 200}) {
         oneDark,
         lintGutter(),
         scrubbableNumbers,
+        colorSwatches,
         EditorView.updateListener.of((update) => {
           if (!update.docChanged) return;
           // Scrub drags want near-immediate feedback; typing gets debounced.

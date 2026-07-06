@@ -2,8 +2,8 @@
 """Run a Tildagon badge demo on this PC and render it to frames + a GIF.
 
     python3 demos/sim/run.py --list                 # show the demo names
-    python3 demos/sim/run.py uan --gif              # render demo "uan" to a GIF
-    python3 demos/sim/run.py for --gif --frames 60  # longer capture
+    python3 demos/sim/run.py tixy --gif              # render demo "tixy" to a GIF
+    python3 demos/sim/run.py starfield --gif --frames 60  # longer capture
     python3 demos/sim/run.py all --gif              # render every demo
 
 Each demo lives in demos/<name>/app.py and is an unmodified badge app
@@ -29,18 +29,18 @@ import tildagon_sim as sim  # noqa: E402
 # Per-demo input timelines: {name: [(update_index, "BUTTON"), ...]}. The press
 # is injected for exactly one update() (a tap) so the GIF shows the demo react.
 SCRIPTS = {
-    "uan":   [(30, "RIGHT"), (60, "RIGHT"), (90, "RIGHT"), (120, "UP"), (150, "DOWN")],
-    "ciu":   [(40, "RIGHT"), (80, "RIGHT")],
-    "tri":   [(50, "CONFIRM"), (100, "RIGHT")],
-    "sics":  [(40, "CONFIRM"), (80, "RIGHT"), (120, "LEFT")],
-    "seven": [(60, "RIGHT"), (120, "RIGHT")],
-    "eit":   [(70, "RIGHT")],
-    "nain":  [(50, "RIGHT"), (100, "RIGHT")],
-    "ten":   [(60, "RIGHT")],
-    "ileven": [(80, "CONFIRM")],
-    "twelv": [(40, "CONFIRM"), (90, "RIGHT")],
-    "thurteen": [(60, "RIGHT")],
-    "forteen": [(50, "RIGHT")],
+    "tixy":   [(30, "RIGHT"), (60, "RIGHT"), (90, "RIGHT"), (120, "UP"), (150, "DOWN")],
+    "moire":   [(40, "RIGHT"), (80, "RIGHT")],
+    "qix":   [(50, "CONFIRM"), (100, "RIGHT")],
+    "kaleidoscope":  [(40, "CONFIRM"), (80, "RIGHT"), (120, "LEFT")],
+    "hopalong": [(60, "RIGHT"), (120, "RIGHT")],
+    "matrixrain":   [(70, "RIGHT")],
+    "plasma":  [(50, "RIGHT"), (100, "RIGHT")],
+    "ledring":   [(60, "RIGHT")],
+    "pipes": [(80, "CONFIRM")],
+    "cellular": [(40, "CONFIRM"), (90, "RIGHT")],
+    "ribbons": [(60, "RIGHT")],
+    "metaballs": [(50, "RIGHT")],
 }
 
 

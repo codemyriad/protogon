@@ -102,6 +102,15 @@ main {
   cursor: ew-resize;
 }
 .stale-hint { color: var(--error); }
+.swatch-hint {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, #f55089 0 50%, #2eadd9 50% 100%);
+  vertical-align: -0.05em;
+}
 
 /* --- badge pane ----------------------------------------------------------- */
 #badge-pane {

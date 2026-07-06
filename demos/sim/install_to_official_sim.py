@@ -10,7 +10,7 @@
 
 The sim launcher reads apps from sim/apps/<Name>/ and needs metadata.json (NOT
 tildagon.toml). Folder/class names are Capitalised so they are valid Python
-identifiers -- important for "for", whose folder becomes "For" (a bare "for"
+identifiers -- important for "starfield", whose folder becomes "For" (a bare "starfield"
 package cannot be imported). App bodies are copied verbatim; only the wrapper
 files are generated.
 """
@@ -21,20 +21,20 @@ import sys
 
 # name -> (number, human title). Order = the shortlist in the research brief.
 DEMOS = [
-    ("uan", 1, "Tixy grid"),
-    ("ciu", 2, "Moire rings"),
-    ("tri", 3, "Qix tracer"),
-    ("for", 4, "IMU starfield"),
-    ("faiv", 5, "Polar tunnel"),
-    ("sics", 6, "Hex kaleidoscope"),
-    ("seven", 7, "Hopalong plotter"),
-    ("eit", 8, "Matrix rain"),
-    ("nain", 9, "Plasma tiles"),
-    ("ten", 10, "LED phase-lock"),
-    ("ileven", 11, "Pipes grower"),
-    ("twelv", 12, "Cellular playground"),
-    ("thurteen", 13, "Drift lines"),
-    ("forteen", 14, "Orbiting metaballs"),
+    ("tixy", 1, "Tixy grid"),
+    ("moire", 2, "Moire rings"),
+    ("qix", 3, "Qix tracer"),
+    ("starfield", 4, "IMU starfield"),
+    ("tunnel", 5, "Polar tunnel"),
+    ("kaleidoscope", 6, "Hex kaleidoscope"),
+    ("hopalong", 7, "Hopalong plotter"),
+    ("matrixrain", 8, "Matrix rain"),
+    ("plasma", 9, "Plasma tiles"),
+    ("ledring", 10, "LED phase-lock"),
+    ("pipes", 11, "Pipes grower"),
+    ("cellular", 12, "Cellular playground"),
+    ("ribbons", 13, "Drift lines"),
+    ("metaballs", 14, "Orbiting metaballs"),
 ]
 
 HERE = os.path.dirname(os.path.abspath(__file__))

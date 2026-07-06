@@ -1,4 +1,4 @@
-# seven (7) -- Hopalong plotter. One point hops by a fixed rule; a few thousand
+# hopalong (7) -- Hopalong plotter. One point hops by a fixed rule; a few thousand
 # hops paint Barry Martin's strange attractor as a slowly turning cloud.
 #
 # HOW IT WORKS
@@ -9,10 +9,13 @@
 #   petals nobody designed. We keep the last few hundred spots on screen,
 #   colour them rainbow by age, and slowly spin the whole cloud.
 #
+# PRIOR ART  Barry Martin's Hopalong attractor, popularised by A. K. Dewdney in
+#            Scientific American (Sept 1986) -- https://en.wikibooks.org/wiki/Fractals/Hopalong
+#
 # BUTTONS   RIGHT/LEFT next/previous preset (fresh cloud) - CANCEL exits
 #
-#   sim:   python3 demos/sim/run.py seven --gif
-#   badge: drop demos/seven into the official simulator's sim/apps/ (see README)
+#   sim:   python3 demos/sim/run.py hopalong --gif
+#   badge: drop demos/hopalong into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES
@@ -66,7 +69,7 @@ def rainbow(h):
     return (1.0, 0.0, q)
 
 
-class Seven(app.App):
+class Hopalong(app.App):
     """Hop the point a few times per frame; draw the trail it leaves behind."""
 
     def __init__(self, config=None):
@@ -130,7 +133,7 @@ class Seven(app.App):
         ctx.restore()
 
 
-__app_export__ = Seven
+__app_export__ = Hopalong
 
 # ------------------------------ try this --------------------------------------
 # - drag the first preset's 0.35 up towards 1.0 in tiny steps and watch the
