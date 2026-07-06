@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tildagon live playground</title>
+<meta name="description" content="EMF Tildagon badge demos running on the real firmware scheduler and renderer, in your browser, next to an editor. Edits go live as you type.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>">
+</head>
+<body>
+
+<header>
+  <div class="brand">⬡ <strong>Tildagon</strong> live playground</div>
+  <nav id="demo-chips" aria-label="demos"></nav>
+</header>
+
+<main>
+  <section id="editor-pane">
+    <div id="editor"></div>
+    <div id="editor-hint">
+      Edits go live as you type — nothing to run, nothing to reload.
+      Drag any <span class="scrub-hint">number</span> to scrub it.
+      If an edit breaks, the badge keeps running the last working code
+      (<span class="stale-hint">●</span> marks that) and the error is pinned to its line.
+    </div>
+  </section>
+
+  <aside id="badge-pane">
+    <div id="badge">
+      <canvas id="screen" width="240" height="240"></canvas>
+      <div id="screen-boot" hidden></div>
+      <div id="stale-dot" title="the badge is running older code than shown" hidden>●</div>
+    </div>
+
+    <div id="transport">
+      <button id="btn-pause" title="pause badge time">⏸</button>
+      <button id="btn-step" title="advance one frame (50 ms)" disabled>⏭</button>
+      <button id="btn-reset" title="restart the app (fresh state)">↺</button>
+      <label id="speed-wrap">
+        <input id="speed" type="range" min="-1" max="0.602" step="0.05" value="0">
+        <span id="speed-label">1.0×</span>
+      </label>
+      <span class="stat" id="stat-t"></span>
+      <span class="stat" id="stat-fps"></span>
+    </div>
+
+    <div id="badge-hint">
+      arrows / enter / esc press the badge buttons · point at the badge to tilt it
+    </div>
+
+    <details id="console">
+      <summary>console</summary>
+      <pre id="console-log"></pre>
+    </details>
+  </aside>
+</main>
+
+<footer>
+  Unmodified <a href="https://github.com/emfcamp/badge-2024-software">EMF Tildagon firmware</a>
+  (scheduler, event bus and ctx renderer) running in your browser ·
+  demos from <a href="https://github.com/codemyriad/protogon">protogon</a> ·
+  in the spirit of <a href="https://worrydream.com/LearnableProgramming/">Learnable Programming</a>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

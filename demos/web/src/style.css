@@ -1,0 +1,290 @@
+/* Tildagon live playground — restrained, dark, content-first. */
+
+:root {
+  --bg: #14171a;
+  --panel: #1b1f23;
+  --line: #2a3036;
+  --text: #d6dbe0;
+  --dim: #7f8a94;
+  --accent: #afc944;   /* tildagon pale green */
+  --error: #ff6b6b;
+  font-size: 15px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* --- header ------------------------------------------------------------- */
+header {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+
+.brand { white-space: nowrap; color: var(--dim); }
+.brand strong { color: var(--text); font-weight: 600; }
+
+#demo-chips {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.chip {
+  flex: none;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.18rem 0.7rem;
+  cursor: pointer;
+}
+.chip:hover { color: var(--text); border-color: var(--dim); }
+.chip.active {
+  color: #10130a;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- main layout ---------------------------------------------------------- */
+main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+#editor-pane {
+  flex: 1.25;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+}
+
+#editor { flex: 1; min-height: 0; }
+#editor .cm-editor { height: 100%; font-size: 13.5px; }
+#editor .cm-scroller { overflow: auto; }
+
+#editor-hint {
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--dim);
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--line);
+  line-height: 1.5;
+}
+.scrub-hint {
+  border-bottom: 1px dotted var(--accent);
+  color: var(--accent);
+  cursor: ew-resize;
+}
+.stale-hint { color: var(--error); }
+
+/* --- badge pane ----------------------------------------------------------- */
+#badge-pane {
+  flex: 1;
+  min-width: 340px;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 0.6rem;
+  overflow-y: auto;
+}
+
+#badge {
+  position: relative;
+  width: min(100%, 540px);
+  aspect-ratio: 1;
+  background: url("badge.png") center / contain no-repeat;
+  user-select: none;
+  touch-action: none;
+}
+
+#screen {
+  position: absolute;
+  left: 34.11%;
+  top: 33.56%;
+  width: 32.74%;
+  height: 32.74%;
+  border-radius: 50%;
+  background: #000;
+}
+
+#screen-boot {
+  position: absolute;
+  left: 34.11%;
+  top: 33.56%;
+  width: 32.74%;
+  height: 32.74%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12%;
+  font-size: 0.72rem;
+  color: var(--dim);
+  background: rgba(0, 0, 0, 0.75);
+}
+#screen-boot.error { color: var(--error); }
+
+#stale-dot {
+  position: absolute;
+  left: 63%;
+  top: 36%;
+  color: var(--error);
+  font-size: 0.9rem;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.25; } }
+
+.led {
+  position: absolute;
+  width: 3.2%;
+  height: 3.2%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  transition: background 60ms linear, box-shadow 60ms linear;
+}
+
+.btn-hotspot {
+  position: absolute;
+  width: 8.5%;
+  height: 8.5%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+#badge:hover .btn-hotspot {
+  color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.25);
+}
+.btn-hotspot.held {
+  color: #10130a !important;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* --- transport ------------------------------------------------------------ */
+#transport {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(100%, 540px);
+}
+
+#transport button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-width: 2.1rem;
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+}
+#transport button:hover:not(:disabled) { border-color: var(--dim); }
+#transport button:disabled { opacity: 0.35; cursor: default; }
+
+#speed-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+#speed { flex: 1; accent-color: var(--accent); }
+#speed-label { min-width: 2.8em; text-align: right; font-variant-numeric: tabular-nums; }
+
+.stat {
+  font-size: 0.8rem;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 4.2em;
+  text-align: right;
+}
+
+#badge-hint {
+  font-size: 0.75rem;
+  color: var(--dim);
+  text-align: center;
+}
+
+/* --- console -------------------------------------------------------------- */
+#console {
+  width: min(100%, 540px);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
+#console summary {
+  font-size: 0.8rem;
+  color: var(--dim);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+#console-log {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  max-height: 180px;
+  overflow-y: auto;
+  font: 11.5px/1.45 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  border-top: 1px solid var(--line);
+}
+.c-out { color: var(--dim); }
+.c-err { color: var(--error); }
+
+/* --- footer ---------------------------------------------------------------- */
+footer {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--dim);
+  text-align: center;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* --- narrow screens --------------------------------------------------------- */
+@media (max-width: 900px) {
+  main { flex-direction: column-reverse; overflow-y: auto; }
+  #editor-pane { border-right: none; min-height: 60vh; }
+  #badge-pane { max-width: none; }
+  #badge { width: min(100%, 420px); }
+}
