@@ -152,6 +152,8 @@ main {
   background: rgba(0, 0, 0, 0.75);
 }
 #screen-boot.error { color: var(--error); }
+/* the explicit display:flex above would defeat the hidden attribute */
+#screen-boot[hidden] { display: none; }
 
 #stale-dot {
   position: absolute;

@@ -127,8 +127,11 @@ node_modules/.bin/esbuild src/sim-worker.js --bundle --format=esm --minify --tar
   --define:__BUILD_ID__="\"$BUILD_ID\"" --outfile="$DIST/sim-worker.js"
 
 cp "$HERE/src/style.css" "$DIST/"
-# Version the page's own entry point too, for caches that ignore no-store.
-sed "s/src=\"app.js\"/src=\"app.js?b=$BUILD_ID\"/" "$HERE/src/index.html" > "$DIST/index.html"
+# Version the page's own entry points too, for caches that ignore no-store
+# (and CDNs with long s-maxage, e.g. pgs.sh caches for a week).
+sed -e "s/src=\"app.js\"/src=\"app.js?b=$BUILD_ID\"/" \
+    -e "s/href=\"style.css\"/href=\"style.css?b=$BUILD_ID\"/" \
+    "$HERE/src/index.html" > "$DIST/index.html"
 
 echo ">> done: $DIST"
 du -sh "$DIST" | sed 's/^/   /'
