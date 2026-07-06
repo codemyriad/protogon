@@ -251,7 +251,7 @@ async function boot() {
 
   progress("loading Python (Pyodide)");
   const { loadPyodide } = await import(
-    new URL("./pyodide/pyodide.mjs", self.location.href).href
+    new URL("./pyodide/pyodide.js", self.location.href).href
   );
   pyodide = await loadPyodide({
     indexURL: new URL("./pyodide/", self.location.href).href,

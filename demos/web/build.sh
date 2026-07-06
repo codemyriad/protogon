@@ -32,6 +32,13 @@ mkdir -p "$DIST/pyodide"
 tar -xzf "$PYO_TGZ" -C "$DIST/pyodide" --strip-components=1 \
   package/pyodide.mjs package/pyodide.asm.mjs package/pyodide.asm.wasm \
   package/python_stdlib.zip package/pyodide-lock.json
+# Ship the ES modules as .js: browsers enforce a JavaScript MIME type on
+# module imports and some static hosts (pgs.sh) serve .mjs as text/plain.
+mv "$DIST/pyodide/pyodide.mjs" "$DIST/pyodide/pyodide.js"
+mv "$DIST/pyodide/pyodide.asm.mjs" "$DIST/pyodide/pyodide.asm.js"
+sed -i.bak 's/pyodide\.asm\.mjs/pyodide.asm.js/g' \
+  "$DIST/pyodide/pyodide.js" "$DIST/pyodide/pyodide.asm.js"
+rm -f "$DIST/pyodide/"*.bak
 
 # --- 2. badge firmware + sim fakes -------------------------------------------
 BADGE_TGZ="$CACHE/badge-$BADGE_SHA.tar.gz"
