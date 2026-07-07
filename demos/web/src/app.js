@@ -416,10 +416,14 @@ function bindTransport() {
 // ---------------------------------------------------------------------------
 const FLYOUT_KEY = "tlp.ui.flyout.v1";
 
-function setFlyout(open) {
+function setFlyout(open, { persist = true } = {}) {
   $("#flyout").hidden = !open;
   document.body.classList.toggle("flyout-open", open);
   $("#btn-browse").setAttribute("aria-expanded", String(open));
+  // Only explicit toggles (▤ / ✕ / Esc) are remembered as a preference;
+  // the auto-close after picking a card shouldn't flip the next visit's
+  // default.
+  if (!persist) return;
   try {
     localStorage.setItem(FLYOUT_KEY, open ? "1" : "0");
   } catch {}
@@ -494,16 +498,16 @@ async function main() {
     onTitle: (name) => {
       document.title = `${name} · Tildagon live playground`;
     },
-    // Picking a card on a phone: the full-screen flyout would hide the result.
-    onPicked: () => {
-      if (narrow()) setFlyout(false);
-    },
+    // Picking a card loads it AND puts the gallery away, so the code and
+    // badge are immediately front and centre (the dock strip covers quick
+    // switching from there).
+    onPicked: () => setFlyout(false, { persist: false }),
     onFlashRequest: async (ref) => {
       // Cards are clickable while the first demo is still loading; until
       // library/flash exist there is nothing to flash yet.
       if (!library || !flash) return;
       await library.switchTo(ref);
-      if (narrow()) setFlyout(false);
+      setFlyout(false, { persist: false });
       flash.open();
     },
   });

@@ -412,14 +412,46 @@ export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlash
     }
     $("#mine-head").hidden = !snippets.length;
     $("#mine-count").textContent = snippets.length;
+    buildDockTiles(); // snippets changed -> the dock strip did too
     markActiveCard();
     applyFilter();
   }
 
+  // The dock's collapsed-gallery strip: a mini thumbnail per script, title on
+  // hover, click to open — quick switching without the flyout.
+  function makeDockTile(ref, name) {
+    const tile = document.createElement("button");
+    tile.className = "dock-tile thumb";
+    tile.dataset.key = refKey(ref);
+    tile.title = name;
+    tile.setAttribute("aria-label", `open ${name}`);
+    previews.bindThumb(tile, refKey(ref));
+    tile.addEventListener("click", () => switchTo(ref));
+    return tile;
+  }
+
+  function buildDockTiles() {
+    const box = $("#dock-tiles");
+    box.textContent = "";
+    for (const demo of manifest) {
+      box.appendChild(makeDockTile({ kind: "demo", id: demo.id }, demo.title));
+    }
+    const snippets = store.listSnippets();
+    if (snippets.length) {
+      const rule = document.createElement("div");
+      rule.className = "dock-tiles-rule";
+      box.appendChild(rule);
+      for (const s of snippets) {
+        box.appendChild(makeDockTile({ kind: "snippet", id: s.id }, s.name));
+      }
+    }
+    markActiveCard();
+  }
+
   function markActiveCard() {
     const key = state.ref ? refKey(state.ref) : "";
-    for (const card of document.querySelectorAll(".card")) {
-      card.classList.toggle("active", card.dataset.key === key);
+    for (const el of document.querySelectorAll(".card, .dock-tile")) {
+      el.classList.toggle("active", el.dataset.key === key);
     }
   }
 
