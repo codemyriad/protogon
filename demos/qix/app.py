@@ -23,14 +23,15 @@ from system.patterndisplay.events import PatternDisable, PatternEnable
 from tildagonos import tildagonos
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-TRAIL     = 42                 # shapes remembered ....... try 12 (crisp) or 80
-BOX       = 106                # half-width of the bounce box ... squeeze to 60
-SPEED_MIN = 70.0               # slowest fresh point, pixels per second
-SPEED_MAX = 110.0              # fastest fresh point ..... try 300.0 (frantic)
-RAINBOW   = 0.15               # hue turns per second in rainbow mode: try 0.5
-LED_WAVE  = 2.0                # LED ring wave speed ..... try 6.0 (busy) or 0.5
-EMBER     = (1.0, 0.4, 0.1)    # second palette: glowing coals
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+TRAIL     = 42                 # 0<n<100   shapes remembered ....... try 12 (crisp) or 80
+BOX       = 106                # 20<n<120  half-width of the bounce box ... squeeze to 60
+SPEED_MIN = 70.0               # 0<n<200   slowest fresh point, pixels per second
+SPEED_MAX = 110.0              # 0<n<400   fastest fresh point ..... try 300.0 (frantic)
+RAINBOW   = 0.15               # 0<n<1     hue turns per second in rainbow mode: try 0.5
+LED_WAVE  = 2.0                # 0<n<10    LED ring wave speed ..... try 6.0 (busy) or 0.5
+EMBER     = (1.0, 0.4, 0.1)    # second palette: glowing coals -- tap the swatch
 ICE       = (0.3, 0.9, 1.0)    # third palette: cold blue
 
 
@@ -143,6 +144,6 @@ class Qix(app.App):
 __app_export__ = Qix
 
 # ------------------------------ try this --------------------------------------
-# - drag TRAIL to 80 and SPEED_MAX to 300.0 -- long ribbons whip around the box
+# - drag / double-tap TRAIL to 80 and SPEED_MAX to 300.0 -- long ribbons whip around the box
 # - squeeze BOX down to 40: the whole dance folds into a knot mid-screen
 # - in draw(), change  age * age * 0.9  to  age * 0.9  for a gentler, even fade

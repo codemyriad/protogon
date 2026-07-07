@@ -22,13 +22,14 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-RINGS    = 22     # rings in the stack ........ try 10 (sparse) or 34 (dense)
-INNER    = 6.0    # radius of the smallest ring.. 20.0 opens the mouth wide
-RING_GAP = 5.2    # px from one ring to the next.. 8.0 stretches the tunnel
-BREATH   = 3.0    # how fast the bright band rolls outward.. try 6.0 or 0.8
-RIPPLE   = 0.55   # wave crowding: bigger squeezes more bands in.. try 1.6
-WANDER   = 12.0   # how far the tunnel mouth drifts ........ 30.0 gets seasick
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+RINGS    = 22     # 6<n<40   rings in the stack.. 10 = sparse, 34 = dense
+INNER    = 6.0    # 2<n<24   radius of the smallest ring.. bigger opens the mouth
+RING_GAP = 5.2    # 2<n<10   px from one ring to the next
+BREATH   = 3.0    # -6<n<8   how fast the bright band rolls (negative = inward)
+RIPPLE   = 0.55   # 0<n<2    wave crowding: bigger squeezes more bands in
+WANDER   = 12.0   # 0<n<40   how far the tunnel mouth drifts.. 30 gets seasick
 
 # --------------------------- pick the colours --------------------------------
 # Click a scheme to switch it live (on a real badge, LEFT/RIGHT cycle them).

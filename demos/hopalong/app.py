@@ -23,20 +23,21 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
 # Each preset row is (a, b, c, zoom). The attractor is touchy: nudge an a, b
 # or c a little and a completely different creature grows in its place.
 PRESETS = ((-2.0, 0.35, 1.2, 3.6),   # try dragging the 0.35 very slowly
            (2.1, 1.9, 0.5, 2.2),
            (-3.1, 0.2, 1.9, 2.6),
            (1.3, 1.3, 1.3, 3.0))
-POINTS = 14       # new hops per frame ...... try 30 (fills in faster)
-KEEP = 440        # spots kept on screen .... try 150 (wispy); each spot is a
-                  # draw call and ~500/frame is the badge's budget
-SPIN = 0.15       # cloud rotation speed .... try -0.15 (other way) or 0.6
-ZOOM = 7.0        # pixels per maths unit ... try 12.0 to fly in close
-DOT = 1.6         # size of each spot ....... try 3.0 (chunky stars)
-HUE_DRIFT = 0.1   # colour cycling speed .... 0.6 turns it into a disco
+POINTS = 14       # 0<n<40   new hops per frame ...... try 30 (fills in faster)
+KEEP = 440        # 0<n<600  spots kept on screen .... try 150 (wispy); each spot is a
+                  #          draw call and ~500/frame is the badge's budget
+SPIN = 0.15       # -1<n<1   cloud rotation speed .... try -0.15 (other way) or 0.6
+ZOOM = 7.0        # 0<n<20   pixels per maths unit ... try 12.0 to fly in close
+DOT = 1.6         # 0<n<6    size of each spot ....... try 3.0 (chunky stars)
+HUE_DRIFT = 0.1   # 0<n<1    colour cycling speed .... 0.6 turns it into a disco
 
 # ------------------------------- the hop -------------------------------------
 
@@ -136,7 +137,7 @@ class Hopalong(app.App):
 __app_export__ = Hopalong
 
 # ------------------------------ try this --------------------------------------
-# - drag the first preset's 0.35 up towards 1.0 in tiny steps and watch the
+# - drag / double-tap the first preset's 0.35 up towards 1.0 in tiny steps and watch the
 #   creature melt and re-grow a new shape at every stop
 # - set SPIN to 0.0 and ZOOM to 12.0 for a still, close-up portrait
 # - add a preset: put (1.1, 0.5, 1.0, 2.5) at the end of PRESETS, then press

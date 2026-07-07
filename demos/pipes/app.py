@@ -23,14 +23,15 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-GRID     = 24     # cells per side .......... try 12 (with CELL 18: fat pipes)
-CELL     = 9      # px between cell centres .. the grid step; try 18
-SPEED    = 2      # cells grown per frame .... try 6 for time-lapse plumbing
-STRAIGHT = 0.7    # chance to keep straight .. 0.95 long runs, 0.0 scribble
-FULL     = 0.72   # board fraction that triggers a wipe ....... try 0.98
-PIPE_W   = 5      # pipe thickness in px ..... try 11 (pairs well with CELL 18)
-HEAD_R   = 4      # radius of the glowing white head
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+GRID     = 24     # 4<n<40  cells per side .......... try 12 (with CELL 18: fat pipes)
+CELL     = 9      # 4<n<40  px between cell centres .. the grid step; try 18
+SPEED    = 2      # 0<n<12  cells grown per frame .... try 6 for time-lapse plumbing
+STRAIGHT = 0.7    # 0<n<1   chance to keep straight .. 0.95 long runs, 0.0 scribble
+FULL     = 0.72   # 0<n<1   board fraction that triggers a wipe ....... try 0.98
+PIPE_W   = 5      # 0<n<20  pipe thickness in px ..... try 11 (pairs well with CELL 18)
+HEAD_R   = 4      # 0<n<12  radius of the glowing white head
 PIPE_COLS = ((0.2, 0.9, 1.0), (1.0, 0.5, 0.2), (0.5, 1.0, 0.4),
              (1.0, 0.3, 0.7), (0.8, 0.8, 0.3), (0.6, 0.5, 1.0))
 
@@ -135,7 +136,7 @@ class Pipes(app.App):
 __app_export__ = Pipes
 
 # ------------------------------ try this --------------------------------------
-# - drag STRAIGHT to 0.0: the head coin-flips at every cell and scribbles;
+# - drag / double-tap STRAIGHT to 0.0: the head coin-flips at every cell and scribbles;
 #   at 0.95 it shoots long straight runs and only turns when it must
 # - GRID = 12, CELL = 18, PIPE_W = 11: chunky retro plumbing, same footprint
 # - FULL = 0.98: watch pipes squeeze into the last free corners before the wipe

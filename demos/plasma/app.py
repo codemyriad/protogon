@@ -21,14 +21,15 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-GRID      = 16               # tiles per side .. try 8 (chunky); 24 chugs the badge
-SPEED     = 1.0              # animation speed ......... 0.3 lava lamp, 3.0 boiling
-WAVE_X    = 0.6              # across-the-screen wave .. drag slowly: bands stretch
-WAVE_Y    = 0.7              # down-the-screen wave .... try 0.0 -- it goes flat
-WAVE_DIAG = 0.45             # diagonal wave ........... try 1.5: slanted stripes
-RIPPLE    = 0.7              # rings from the centre ... try 2.0: tight bullseye
-OCEAN     = (0.0, 0.3, 0.5)  # deepest water in the ocean palette (press RIGHT)
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+GRID      = 16               # 4<n<24  tiles per side .. try 8 (chunky); 24 chugs the badge
+SPEED     = 1.0              # 0<n<5   animation speed ......... 0.3 lava lamp, 3.0 boiling
+WAVE_X    = 0.6              # 0<n<2   across-the-screen wave .. drag slowly: bands stretch
+WAVE_Y    = 0.7              # 0<n<2   down-the-screen wave .... try 0.0 -- it goes flat
+WAVE_DIAG = 0.45             # 0<n<2   diagonal wave ........... try 1.5: slanted stripes
+RIPPLE    = 0.7              # 0<n<3   rings from the centre ... try 2.0: tight bullseye
+OCEAN     = (0.0, 0.3, 0.5)  # deepest water in the ocean palette (press RIGHT) -- tap the swatch
 
 TILE = 240.0 / max(GRID, 1)  # px per tile (max() survives a drag to zero)
 CENTRE = (GRID - 1) / 2.0    # the spot the ripple wave spreads from
@@ -117,7 +118,7 @@ __app_export__ = Plasma
 # ------------------------------ try this --------------------------------------
 # - set WAVE_X, WAVE_Y and WAVE_DIAG all to 0.0: the sliding waves go flat and
 #   a pure bullseye is left pulsing out of the centre
-# - in heat(), drag the rings wave's 1.7 down to 0.0 -- the rings freeze in
+# - in heat(), drag / double-tap the rings wave's 1.7 down to 0.0 -- the rings freeze in
 #   place while the other three waves keep sliding through them
 # - add a palette:  def mint(v): return (v * 0.3, v, v * 0.7)
 #   then put it in PALETTES and press RIGHT until the screen turns minty

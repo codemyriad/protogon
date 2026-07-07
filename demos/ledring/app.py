@@ -25,15 +25,16 @@ from tildagonos import tildagonos
 TAU = 6.28318
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-SPEED = 1.6                 # comet speed, LEDs per second .... race it: 5.0
-TAIL = 3.5                  # LEDs the tail fades over . try 1.5 (spark) or 6.0
-RING = 88                   # radius of the on-screen ring .... pull it in: 60
-DOT_MIN = 9                 # dot size when its LED is dark ... try 4
-DOT_GROW = 6                # extra size at full brightness ... try 14 (blobby)
-PULSE_RATE = 3.0            # heartbeats, roughly per second .. calm it: 1.0
-PULSE_TWIST = 0.0           # pulse phase twist per LED .. try 0.5 (chasing wave)
-SPIN = 0.2                  # rainbow turns per second .. try -0.2 to reverse
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+SPEED = 1.6                 # -6<n<6   comet speed, LEDs per second .... race it: 5.0
+TAIL = 3.5                  # 0<n<16   LEDs the tail fades over . try 1.5 (spark) or 6.0
+RING = 88                   # 0<n<120  radius of the on-screen ring .... pull it in: 60
+DOT_MIN = 9                 # 0<n<20   dot size when its LED is dark ... try 4
+DOT_GROW = 6                # 0<n<20   extra size at full brightness ... try 14 (blobby)
+PULSE_RATE = 3.0            # 0<n<6    heartbeats, roughly per second .. calm it: 1.0
+PULSE_TWIST = 0.0           # 0<n<2    pulse phase twist per LED .. try 0.5 (chasing wave)
+SPIN = 0.2                  # -1<n<1   rainbow turns per second .. try -0.2 to reverse
 COMET = (1.0, 0.6, 0.1)     # comet colour (amber) .. icy: (0.2, 0.6, 1.0)
 PULSE = (0.1, 1.0, 1.0)     # pulse colour (teal) .. warm: (1.0, 0.4, 0.1)
 
@@ -141,7 +142,7 @@ class Ledring(app.App):
 __app_export__ = Ledring
 
 # ------------------------------ try this --------------------------------------
-# - in pulse mode, drag the 0.0 in "i * 0.0" up to 0.5: the shared heartbeat
+# - in pulse mode, drag / double-tap the 0.0 in "i * 0.0" up to 0.5: the shared heartbeat
 #   unrolls into a wave chasing itself around the ring
 # - set TAIL to 12.0: the whole ring glows and the comet becomes a soft tide
 # - make SPEED negative (-1.6): comet, pointer and LEDs all reverse together --

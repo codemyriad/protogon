@@ -22,11 +22,12 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-GRID    = 16                  # dots per side .. try 8 (chunky); 24 chugs the badge
-SPACING = 13.0                # px between dot centres.. spread them out: 15.0
-DOT_MIN = 1.5                 # radius of the smallest visible dot
-WARM    = (1.0, 0.55, 0.15)   # colour for positive values (amber)
+# Drag a number to change it (double-tap for a slider on a touchscreen). The
+# "MIN<n<MAX" notes set each slider's range; a/b/c pick items inside a tuple.
+GRID    = 16                  # 4<n<24  dots per side.. 8 = chunky, 24 chugs
+SPACING = 13.0                # 6<n<24  px between dot centres.. bigger = airier
+DOT_MIN = 1.5                 # 0<n<6   radius of the smallest visible dot
+WARM    = (1.0, 0.55, 0.15)   # colour for positive values (amber) -- tap the swatch
 COOL    = (0.2, 0.55, 1.0)    # colour for negative values (sky blue)
 
 # ----------------------------- the formulas ----------------------------------
@@ -137,7 +138,7 @@ class Tixy(app.App):
 __app_export__ = Tixy
 
 # ------------------------------ try this --------------------------------------
-# - click ripple above, then drag the 7.5 in ripple() sideways: the splash follows
+# - click ripple above, then nudge the 7.5 in ripple() (drag / double-tap): the splash follows
 # - in waves(), change math.cos to math.sin -- then try math.tan (chaos)
 # - add your own formula:  def stripes(t, i, x, y): return math.sin(x - t * 3)
 #   then add a "# LIVE = stripes  #: stripes" line to the picker and click it

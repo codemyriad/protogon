@@ -26,14 +26,15 @@ from system.patterndisplay.events import PatternDisable, PatternEnable
 from tildagonos import tildagonos
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-STARS     = 70              # how many stars ...... try 150 (a blizzard) or 20 (calm)
-FOV       = 90.0            # camera zoom ......... 40.0 snow globe, 160.0 warp tunnel
-TILT_GAIN = 0.6             # how hard a lean shoves the field .... try 2.0 (twitchy)
-SMOOTH    = 0.15            # steering follow-speed. 0.02 oil tanker, 0.5 instant
-GROW      = 3.0             # how fat a star gets as it flies past ....... try 8.0
-BLUE_TINT = 0.15            # icy blue on bright stars. 0.0 pure white, 0.6 deep space
-WARP      = 0.65            # starting warp speed .. 2.0 = hyperspace
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+STARS     = 70              # 0<n<200   how many stars ...... try 150 (a blizzard) or 20 (calm)
+FOV       = 90.0            # 20<n<200  camera zoom ......... 40.0 snow globe, 160.0 warp tunnel
+TILT_GAIN = 0.6             # 0<n<3     how hard a lean shoves the field .... try 2.0 (twitchy)
+SMOOTH    = 0.15            # 0<n<1     steering follow-speed. 0.02 oil tanker, 0.5 instant
+GROW      = 3.0             # 0<n<12    how fat a star gets as it flies past ....... try 8.0
+BLUE_TINT = 0.15            # 0<n<1     icy blue on bright stars. 0.0 pure white, 0.6 deep space
+WARP      = 0.65            # 0<n<3     starting warp speed .. 2.0 = hyperspace
 STAR      = (1.0, 1.0, 1.0) # star tint (r,g,b) .. try (1.0, 0.9, 0.7) for warm
 
 
@@ -142,7 +143,7 @@ class Starfield(app.App):
 __app_export__ = Starfield
 
 # ------------------------------ try this --------------------------------------
-# - drag FOV down to 40.0: the field huddles into a snow globe; now push it
+# - drag / double-tap FOV down to 40.0: the field huddles into a snow globe; now push it
 #   past 150.0 and you are staring down a warp tunnel
 # - set SMOOTH to 0.02 and tilt: the steering keeps gliding long after you
 #   level out, like a ship slow to answer the helm

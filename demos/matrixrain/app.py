@@ -23,14 +23,15 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-COLS     = 15     # columns of rain ........ try 8 (sparse) or 22 (dense)
-CELL     = 15     # glyph size AND row spacing, px .. chunky rain: 24
-FALL_MIN = 45.0   # slowest column, px per second
-FALL_MAX = 130.0  # fastest column ......... storm: 300.0
-TAIL_MIN = 6      # shortest tail, in glyphs
-TAIL_MAX = 16     # longest tail ........... long streamers: 24
-FLICKER  = 0.15   # chance per frame a column swaps a letter .. boiling: 0.9
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+COLS     = 15     # 0<n<32   columns of rain ........ try 8 (sparse) or 22 (dense)
+CELL     = 15     # 4<n<40   glyph size AND row spacing, px .. chunky rain: 24
+FALL_MIN = 45.0   # 0<n<200  slowest column, px per second
+FALL_MAX = 130.0  # 0<n<400  fastest column ......... storm: 300.0
+TAIL_MIN = 6      # 0<n<40   shortest tail, in glyphs
+TAIL_MAX = 16     # 0<n<40   longest tail ........... long streamers: 24
+FLICKER  = 0.15   # 0<n<1    chance per frame a column swaps a letter .. boiling: 0.9
 TINTS = ((0.3, 1.0, 0.4),   # phosphor green   <- RIGHT cycles these four
          (1.0, 0.7, 0.1),   # amber terminal
          (0.3, 0.9, 1.0),   # ice cyan
@@ -113,5 +114,5 @@ __app_export__ = Matrixrain
 
 # ------------------------------ try this --------------------------------------
 # - set GLYPHS = "01" for binary rain, or spell something: "EMF2026 "
-# - drag FLICKER to 0.9 and the letters boil; at 0.0 each column's text freezes
+# - drag / double-tap FLICKER to 0.9 and the letters boil; at 0.0 each column's text freezes
 # - CELL = 24 with COLS = 9 makes chunky billboard rain (the font follows CELL)

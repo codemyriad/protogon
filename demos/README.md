@@ -146,11 +146,17 @@ The [live playground](web/) adds a couple of zero-cost affordances if you
 write the demo a certain way. They are all plain Python — a badge or the
 official sim ignores them:
 
-- **Scrub / swatch**: any plain int/float literal is drag-to-change, and any
-  three `0.0–1.0` literals that form an `(r, g, b)` tuple or `ctx.rgb(...)`
-  arguments get a click-to-open colour picker. So hoist the fun knobs into the
-  `# --- tweak me ---` block as bare literals and express colours as
-  `(r, g, b)` constants, not computed/HSV expressions.
+- **Tweak numbers / swatch**: any plain int/float literal is drag-to-change
+  (double-tap for a slider on a touchscreen), and any three `0.0–1.0` literals
+  that form an `(r, g, b)` tuple or `ctx.rgb(...)` arguments get a tap-to-open
+  colour picker. So hoist the fun knobs into the `# --- tweak me ---` block as
+  bare literals and express colours as `(r, g, b)` constants, not computed/HSV
+  expressions.
+- **Slider ranges** (`# MIN<n<MAX`): a note like `GRID = 16  # 4<n<24` sets
+  that number's slider bounds. One number per line uses `n`; with several on a
+  line, letters map left-to-right (`C = (2.2, 3.3)  # 1<a<5 3<b<10`). The
+  bounds live in the comment, so a badge ignores them. `tixy` and `tunnel`
+  annotate their whole tweak block this way.
 - **Pick-one groups** (`#: label`): a run of adjacent same-indent lines each
   ending in a `#: name` marker becomes a clickable radio group — exactly the
   uncommented one runs, the rest are commented out, and clicking swaps live.

@@ -22,15 +22,16 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-RIBBONS    = 3      # ribbons in the braid (RIGHT/LEFT change this too).. try 6
-R_MIN, R_MAX = 2, 6  # ribbon-count range RIGHT/LEFT walks .. try 1, 9
-ANCHORS    = 7      # anchor points per ribbon ........ try 4 (angular) or 12
-SWAY       = 70.0   # how far anchors swing up and down, px ........ try 110.0
-SWAY_SPEED = 0.8    # speed of the big swing ............... try 2.0 (frantic)
-WOBBLE     = 20.0   # the slower second wave stacked on top ........ try 45.0
-THICKNESS  = 2.5    # ribbon stroke width, px ............... try 6.0 (chunky)
-GLOW       = 0.85   # ribbon opacity, 0..1 .................. try 0.40 (misty)
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+RIBBONS    = 3      # 1<n<12   ribbons in the braid (RIGHT/LEFT change this too).. try 6
+R_MIN, R_MAX = 2, 6  # 1<a<12  1<b<12  ribbon-count range RIGHT/LEFT walks .. try 1, 9
+ANCHORS    = 7      # 2<n<16   anchor points per ribbon ........ try 4 (angular) or 12
+SWAY       = 70.0   # 0<n<160  how far anchors swing up and down, px ........ try 110.0
+SWAY_SPEED = 0.8    # 0<n<4    speed of the big swing ............... try 2.0 (frantic)
+WOBBLE     = 20.0   # 0<n<80   the slower second wave stacked on top ........ try 45.0
+THICKNESS  = 2.5    # 0<n<12   ribbon stroke width, px ............... try 6.0 (chunky)
+GLOW       = 0.85   # 0<n<1    ribbon opacity, 0..1 .................. try 0.40 (misty)
 PALETTE    = ((0.3, 0.8, 1.0), (1.0, 0.4, 0.7), (0.6, 1.0, 0.5),
               (1.0, 0.8, 0.3), (0.7, 0.5, 1.0))  # sky, pink, mint, gold, lilac
 
@@ -104,7 +105,7 @@ class Ribbons(app.App):
 __app_export__ = Ribbons
 
 # ------------------------------ try this --------------------------------------
-# - drag SWAY to 110.0 and THICKNESS to 6.0 -- fat ribbons that fill the badge
+# - drag / double-tap SWAY to 110.0 and THICKNESS to 6.0 -- fat ribbons that fill the badge
 # - set WOBBLE to 0.0 for one clean repeating braid, then ease it back up and
 #   watch the pattern loosen into drift
 # - the 0.9 in anchor_points() is the twist between neighbours: try 0.1 (lazy

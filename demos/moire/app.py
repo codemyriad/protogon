@@ -22,16 +22,17 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-RINGS    = 11                  # rings per family ....... try 6 (airy) or 16
-RING_GAP = 8.0                 # px between ring radii .. squeeze them: 5.0
-INNER    = 14                  # innermost ring radius . try 30 (big hole)
-DRIFT    = 30.0                # how far a family wanders off-centre.. try 70.0
-SPEED    = 1.0                 # drift speed ............ try 3.0 (dizzy)
-STAGGER  = 0.30                # wander delay, ring to ring.. try 0.0 or 0.9
-SIDES    = 6                   # corners in hexagon mode.. try 3 (triangles)
-LINE_W   = 1.6                 # line thickness, px .... thin best: 3.0
-CYAN     = (0.15, 0.75, 1.0)   # first family's colour
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+RINGS    = 11                  # 4<n<24   rings per family ....... try 6 (airy) or 16
+RING_GAP = 8.0                 # 2<n<16   px between ring radii .. squeeze them: 5.0
+INNER    = 14                  # 0<n<40   innermost ring radius . try 30 (big hole)
+DRIFT    = 30.0                # 0<n<100  how far a family wanders off-centre.. try 70.0
+SPEED    = 1.0                 # 0<n<5    drift speed ............ try 3.0 (dizzy)
+STAGGER  = 0.30                # 0<n<1    wander delay, ring to ring.. try 0.0 or 0.9
+SIDES    = 6                   # 3<n<12   corners in hexagon mode.. try 3 (triangles)
+LINE_W   = 1.6                 # 0<n<6    line thickness, px .... thin best: 3.0
+CYAN     = (0.15, 0.75, 1.0)   # first family's colour -- tap the swatch
 PINK     = (1.0, 0.25, 0.55)   # second family's colour (the mirror twin)
 
 # ------------------------------ ring shapes ----------------------------------
@@ -115,7 +116,7 @@ __app_export__ = Moire
 # ------------------------------ try this --------------------------------------
 # - set STAGGER to 0.0: each family snaps into a rigid bullseye, and you get
 #   two targets orbiting each other instead of a swirling interference cloud
-# - drag the 1.3 in the wander line to 1.0 -- every centre now travels a
+# - drag / double-tap the 1.3 in the wander line to 1.0 -- every centre now travels a
 #   perfect circle, so the whole pattern stops morphing and just spins
-# - press RIGHT for polygons, then drag SIDES down to 3: drifting triangle
+# - press RIGHT for polygons, then drag / double-tap SIDES down to 3: drifting triangle
 #   moire (4 gives diamonds, 12 is nearly circles again)

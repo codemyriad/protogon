@@ -5,10 +5,12 @@ live. Edit the code and the badge changes as you type: no run button, no
 reload, no install. Break the code and the badge keeps running the last
 working version while the error is pinned to the offending line.
 
-Direct-manipulation editing: **drag** any number literal to scrub it, **click**
-a colour swatch for a picker, **click** a `#:` pick-one choice to swap it live,
-**click** a `FLAG = True/False`. Pause badge time and edits re-render the frozen
-frame.
+Direct-manipulation editing: **drag** any number literal to change it (or
+**double-tap** it on a touchscreen for a slider), **tap** a colour swatch for a
+picker, **tap** a `#:` pick-one choice to swap it live, **tap** a
+`FLAG = True/False`. A `# MIN<n<MAX` comment on a line sets that number's slider
+range (with several numbers on a line, `a`/`b`/`c`/… pick them by position).
+Pause badge time and edits re-render the frozen frame.
 
 Every page is one demo: `/#tixy`, `/#ledring`, … The chips at the top switch
 between all fourteen.

@@ -23,13 +23,14 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-GRID       = 20                # cells per side .... try 14; >20 chugs the badge
-CELL       = 10                # px per cell ....... try 11 to fill the screen
-STEP_EVERY = 3                 # frames per generation ..... 1 races, 8 crawls
-SEED       = 0.32              # fraction alive on reseed  lonely 0.1, mobbed 0.6
-GAP        = 0.6               # grout between cells  0.0 fuses, 3.0 makes beads
-AGE_TINT   = 0.1               # how fast Life survivors blush red .... try 0.5
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+GRID       = 20                # 4<n<28  cells per side .... try 14; >20 chugs the badge
+CELL       = 10                # 4<n<20  px per cell ....... try 11 to fill the screen
+STEP_EVERY = 3                 # 0<n<16  frames per generation ..... 1 races, 8 crawls
+SEED       = 0.32              # 0<n<1   fraction alive on reseed  lonely 0.1, mobbed 0.6
+GAP        = 0.6               # 0<n<5   grout between cells  0.0 fuses, 3.0 makes beads
+AGE_TINT   = 0.1               # 0<n<1   how fast Life survivors blush red .... try 0.5
 LIFE_YOUNG = (0.2, 1.0, 0.3)   # Life cell, freshly born (green)
 LIFE_OLD   = (1.0, 0.4, 0.3)   # Life cell, old survivor (red blush)
 FIRING     = (0.4, 0.8, 1.0)   # Brian's Brain spark colour (electric blue)

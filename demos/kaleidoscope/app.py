@@ -23,20 +23,21 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
 SYMMETRIES = (6, 8, 12)   # wedge counts RIGHT/LEFT step through . try (3, 5, 7)
-WHIRL      = 0.2          # spin of the whole flake ....... try 1.0, or -0.4
-HUE_DRIFT  = 0.05         # colours creep round the rainbow ... rush them: 0.40
-SQUASH     = 0.5          # dot orbit shape: 1.0 round loop, 0.1 flat pancake
-LINE_W     = 2.0          # spoke thickness ................... chunky: 6.0
-ORBIT_MIN  = 30           # closest the big dot orbits ....... try 10
-ORBIT_MAX  = 80           # furthest the big dot orbits ...... try 118 (wild)
-SPIN_MIN   = 0.6          # slowest a reroll can spin ........ try 0.1 (lazy)
-SPIN_MAX   = 2.2          # fastest a reroll can spin ........ try 5.0 (dizzy)
-DOT_MIN    = 6            # smallest dot a reroll can pick ... try 12
-DOT_MAX    = 16           # biggest dot a reroll can pick ..... 30, then CONFIRM
-REACH_MIN  = 60           # shortest spoke a reroll can pick .. try 20
-REACH_MAX  = 105          # longest spoke a reroll can pick ... 118 kisses the rim
+WHIRL      = 0.2          # -1<n<2   spin of the whole flake ....... try 1.0, or -0.4
+HUE_DRIFT  = 0.05         # 0<n<1    colours creep round the rainbow ... rush them: 0.40
+SQUASH     = 0.5          # 0<n<2    dot orbit shape: 1.0 round loop, 0.1 flat pancake
+LINE_W     = 2.0          # 0<n<12   spoke thickness ................... chunky: 6.0
+ORBIT_MIN  = 30           # 0<n<120  closest the big dot orbits ....... try 10
+ORBIT_MAX  = 80           # 0<n<120  furthest the big dot orbits ...... try 118 (wild)
+SPIN_MIN   = 0.6          # 0<n<6    slowest a reroll can spin ........ try 0.1 (lazy)
+SPIN_MAX   = 2.2          # 0<n<6    fastest a reroll can spin ........ try 5.0 (dizzy)
+DOT_MIN    = 6            # 0<n<40   smallest dot a reroll can pick ... try 12
+DOT_MAX    = 16           # 0<n<40   biggest dot a reroll can pick ..... 30, then CONFIRM
+REACH_MIN  = 60           # 0<n<120  shortest spoke a reroll can pick .. try 20
+REACH_MAX  = 105          # 0<n<120  longest spoke a reroll can pick ... 118 kisses the rim
 
 TAU = 6.28318
 
@@ -135,7 +136,7 @@ class Kaleidoscope(app.App):
 __app_export__ = Kaleidoscope
 
 # ------------------------------ try this --------------------------------------
-# - drag the 12 in SYMMETRIES up to 24, press RIGHT until it's live: lace doily
+# - drag / double-tap the 12 in SYMMETRIES up to 24, press RIGHT until it's live: lace doily
 # - set WHIRL to -0.4 and SQUASH to 1.0 -- reverse spin, perfectly round orbits
 # - in motif(), change line_to(self.reach, 0) to line_to(self.reach, 40):
 #   every spoke bends, and the mirrors fold the bends into zigzag stars

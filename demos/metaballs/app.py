@@ -25,14 +25,15 @@ from system.scheduler.events import RequestForegroundPushEvent
 TAU = 6.28318
 
 # ------------------------------ tweak me -------------------------------------
-# In the playground every number is draggable -- grab one and watch the badge.
-SPEED   = 1.0    # pace of the whole dance ...... try 0.3 (lava lamp) or 2.5
-ORBIT   = 40     # average orbit radius, px ..... try 70 (blobs hug the rim)
-SWAY    = 18     # how far orbits breathe .......... try 60 (wild dives)
-SIZE    = 46     # blob radius, px ................. try 65 (one big glob)
-LAYERS  = 5      # discs per blob .................. try 2 (flat) or 8 (silky)
-HAZE    = 0.12   # alpha of the outermost halo ..... try 0.30 (foggy)
-GLOW    = 0.26   # extra alpha at the core ......... try 0.45 (hot centres)
+# Drag a number to change it (double-tap for a slider on a touchscreen);
+# the "MIN<n<MAX" notes set each slider's range.
+SPEED   = 1.0    # 0<n<5    pace of the whole dance ...... try 0.3 (lava lamp) or 2.5
+ORBIT   = 40     # 0<n<120  average orbit radius, px ..... try 70 (blobs hug the rim)
+SWAY    = 18     # 0<n<80   how far orbits breathe .......... try 60 (wild dives)
+SIZE    = 46     # 0<n<100  blob radius, px ................. try 65 (one big glob)
+LAYERS  = 5      # 1<n<12   discs per blob .................. try 2 (flat) or 8 (silky)
+HAZE    = 0.12   # 0<n<1    alpha of the outermost halo ..... try 0.30 (foggy)
+GLOW    = 0.26   # 0<n<1    extra alpha at the core ......... try 0.45 (hot centres)
 PALETTE = ((1.0, 0.3, 0.3), (0.3, 0.6, 1.0), (0.4, 1.0, 0.5),
            (1.0, 0.8, 0.2), (0.9, 0.4, 1.0))   # one colour per blob
 
@@ -96,9 +97,9 @@ class Metaballs(app.App):
 __app_export__ = Metaballs
 
 # ------------------------------ try this --------------------------------------
-# - drag SWAY up to 60: the blobs dive right through the middle and pile
+# - drag / double-tap SWAY up to 60: the blobs dive right through the middle and pile
 #   into one white-hot blaze every time they cross
 # - set LAYERS to 1 -- suddenly it's just flat circles. The whole metaball
 #   illusion lives in that stack of fading discs
-# - drag the 0.9 at the end of the y line down to 0.3 and the dance
+# - drag / double-tap the 0.9 at the end of the y line down to 0.3 and the dance
 #   flattens into a shallow band, like blobs on a horizon

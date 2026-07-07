@@ -15,7 +15,14 @@ import {syntaxTree} from "@codemirror/language";
 import {setDiagnostics, lintGutter} from "@codemirror/lint";
 
 // ---------------------------------------------------------------------------
-// 1. Scrubbable number literals
+// 1. Tweakable number literals
+//   desktop: drag a number to scrub it
+//   mobile:  double-tap a number to open a slider
+//
+// A `MIN<var<MAX` annotation anywhere on the line sets the slider's range.
+// With one number on the line the letter is usually `n` (`# 3<n<22`); with
+// several, letters map to them left-to-right by position:
+//   constants = (2.2, 3.3, 4.4)   # 1<a<5  3<b<10  0<c<1
 // ---------------------------------------------------------------------------
 
 // Find a plain decimal Number token at `pos`. Returns {from, to, text} with a
@@ -86,100 +93,280 @@ const scrubTheme = EditorView.baseTheme({
   ".cm-scrubbable": {
     cursor: "ew-resize",
     borderBottom: "1px dotted currentColor",
-    // Without this, a finger-drag on a number pans the editor instead of
-    // scrubbing (the browser claims the gesture before pointermove fires).
-    touchAction: "none",
+    // Kill the mobile double-tap-to-zoom delay so our own double-tap (which
+    // opens the slider) fires promptly; normal scrolling is untouched.
+    touchAction: "manipulation",
   },
   "&.cm-scrubbing, &.cm-scrubbing *": {cursor: "ew-resize !important"},
+  ".cm-slider-pop": {
+    position: "fixed",
+    zIndex: "60",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.6rem",
+    padding: "0.5rem 0.7rem",
+    background: "#1b1f23",
+    border: "1px solid #2a3036",
+    borderRadius: "8px",
+    boxShadow: "0 8px 26px rgba(0,0,0,0.5)",
+    font: "13px system-ui, sans-serif",
+    color: "#d6dbe0",
+  },
+  ".cm-slider-pop input[type=range]": {
+    width: "min(60vw, 220px)",
+    accentColor: "#afc944",
+    touchAction: "none",
+  },
+  ".cm-slider-val": {
+    minWidth: "3.2em",
+    textAlign: "right",
+    fontVariantNumeric: "tabular-nums",
+    color: "#afc944",
+    fontWeight: "600",
+  },
 });
 
-// Drag handler. pointerdown over a number => we own the gesture (pointer
-// events, not mousedown: on touch devices the compatibility mousedown fires
-// AFTER pointerup, which would leave the window listeners dangling).
-// preventDefault stops native selection and the synthesized mouse events; a
-// <3px "drag" is treated as a click and places the cursor.
+// --- range annotations -----------------------------------------------------
+
+// The plain int/float literals on `line`, left to right.
+function lineNumberTokens(state, line) {
+  const tokens = [];
+  syntaxTree(state).iterate({
+    from: line.from,
+    to: line.to,
+    enter(node) {
+      if (node.name === "Number") {
+        const tok = numberTokenAt(state, node.from);
+        if (tok) tokens.push(tok);
+      }
+    },
+  });
+  return tokens;
+}
+
+// Map each annotated literal to its {min, max}. `n` targets the single value;
+// otherwise a=1st, b=2nd, c=3rd, … The MIN/MAX live in a comment, so they are
+// not Number tokens and never collide with the code literals.
+function parseLineRanges(state, line) {
+  const tokens = lineNumberTokens(state, line);
+  const ranges = new Map(); // literal.from -> {min, max}
+  const re = /(-?\d*\.?\d+)\s*<\s*([a-zA-Z])\s*<\s*(-?\d*\.?\d+)/g;
+  let m;
+  while ((m = re.exec(line.text))) {
+    const min = parseFloat(m[1]);
+    const max = parseFloat(m[3]);
+    const letter = m[2].toLowerCase();
+    let idx = letter === "n" && tokens.length === 1 ? 0 : letter.charCodeAt(0) - 97;
+    if (idx >= 0 && idx < tokens.length && max > min) {
+      ranges.set(tokens[idx].from, { min, max });
+    }
+  }
+  return ranges;
+}
+
+function rangeForToken(state, tok) {
+  const line = state.doc.lineAt(tok.from);
+  return parseLineRanges(state, line).get(tok.from) || null;
+}
+
+// A sensible slider range when the line carries no annotation.
+function defaultRange(value) {
+  if (value > 0 && value <= 1) return { min: 0, max: 1 };
+  if (value === 0) return { min: 0, max: 1 };
+  if (value > 0) return { min: 0, max: value * 4 };
+  return { min: value * 4, max: 0 };
+}
+
+function decimalsForStep(step) {
+  if (step >= 1) return 0;
+  const s = step.toExponential(); // e.g. "1e-2"
+  const exp = parseInt(s.slice(s.indexOf("e") + 1), 10);
+  return Math.max(0, -exp);
+}
+
+// --- the slider popup (mobile double-tap) ----------------------------------
+
+let activeSlider = null;
+function closeActiveSlider() {
+  if (activeSlider) activeSlider();
+  activeSlider = null;
+}
+
+function openSlider(view, tok) {
+  closeActiveSlider();
+  const decimals = stepInfo(tok.text).decimals;
+  const startValue = parseFloat(tok.text);
+  const rng = rangeForToken(view.state, tok) || defaultRange(startValue);
+  // The starting value must fit inside the track.
+  const lo = Math.min(rng.min, startValue);
+  const hi = Math.max(rng.max, startValue);
+  let step = decimals > 0 ? Math.pow(10, -Math.max(decimals, 2)) : 1;
+  while ((hi - lo) / step > 2000) step *= 10; // keep the track manageable
+  const outDecimals = Math.max(decimals, decimalsForStep(step));
+
+  const from = tok.from;
+  const original = tok.text;
+  let currentText = original;
+
+  const docMoved = () =>
+    from + currentText.length > view.state.doc.length ||
+    view.state.sliceDoc(from, from + currentText.length) !== currentText;
+
+  const apply = (value, withHistory) => {
+    if (docMoved()) return;
+    const text = formatNumber(value, outDecimals);
+    if (text === currentText && !withHistory) return;
+    const spec = {
+      changes: { from, to: from + currentText.length, insert: text },
+      userEvent: "input.pick", // fast live-swap path, same as scrubbing
+    };
+    if (!withHistory) spec.annotations = Transaction.addToHistory.of(false);
+    view.dispatch(spec);
+    currentText = text;
+  };
+
+  const pop = document.createElement("div");
+  pop.className = "cm-slider-pop";
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = String(lo);
+  range.max = String(hi);
+  range.step = String(step);
+  range.value = String(startValue);
+  const val = document.createElement("span");
+  val.className = "cm-slider-val";
+  val.textContent = formatNumber(startValue, outDecimals);
+  pop.append(range, val);
+  document.body.appendChild(pop);
+
+  const coords = view.coordsAtPos(from);
+  if (coords) {
+    const w = pop.offsetWidth || 280;
+    pop.style.left = Math.max(6, Math.min(coords.left, window.innerWidth - w - 6)) + "px";
+    const below = coords.bottom + 8;
+    pop.style.top =
+      (below + pop.offsetHeight < window.innerHeight ? below : coords.top - pop.offsetHeight - 8) + "px";
+  }
+
+  range.addEventListener("input", () => {
+    const v = parseFloat(range.value);
+    val.textContent = formatNumber(v, outDecimals);
+    apply(v, false);
+  });
+
+  const close = () => {
+    document.removeEventListener("pointerdown", onOutside, true);
+    pop.remove();
+    // Collapse the whole session into one undo step.
+    if (currentText !== original && !docMoved()) {
+      const finalText = currentText;
+      view.dispatch({
+        changes: { from, to: from + finalText.length, insert: original },
+        annotations: Transaction.addToHistory.of(false),
+      });
+      view.dispatch({
+        changes: { from, to: from + original.length, insert: finalText },
+        userEvent: "input.pick",
+      });
+    }
+  };
+  const onOutside = (e) => {
+    if (!pop.contains(e.target)) closeActiveSlider();
+  };
+  // Defer so the tap that opened us doesn't immediately close it.
+  setTimeout(() => document.addEventListener("pointerdown", onOutside, true), 0);
+
+  activeSlider = close;
+}
+
+// --- pointer handler: mouse drags, touch double-taps -----------------------
+
+// Double-tap tracking (mobile). Two taps on the same literal within 400 ms.
+let lastTapFrom = -1;
+let lastTapAt = 0;
+function isSecondTap(from) {
+  const now = performance.now();
+  const dbl = from === lastTapFrom && now - lastTapAt < 400;
+  lastTapFrom = dbl ? -1 : from;
+  lastTapAt = now;
+  return dbl;
+}
+
 const scrubDragHandler = EditorView.domEventHandlers({
   pointerdown(event, view) {
     if (event.button !== 0) return false;
-    const pos = view.posAtCoords({x: event.clientX, y: event.clientY});
+    const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
     if (pos == null) return false;
     const tok = numberTokenAt(view.state, pos);
     if (!tok) return false;
 
+    // Mobile: no swipe-scrub. A double-tap opens the slider; a single tap
+    // falls through to normal cursor placement.
+    if (event.pointerType === "touch") {
+      if (isSecondTap(tok.from)) {
+        event.preventDefault();
+        openSlider(view, tok);
+        return true;
+      }
+      return false;
+    }
+
+    // Desktop mouse / pen: drag to scrub.
     event.preventDefault();
-    const pointerId = event.pointerId;
     const startX = event.clientX;
     const original = tok.text;
-    const {decimals, step} = stepInfo(original);
+    const { decimals, step } = stepInfo(original);
     const startValue = parseFloat(original);
     const from = tok.from;
     let currentText = original;
     let moved = false;
 
-    // Capture the pointer on the PERSISTENT content element, not the number
-    // span: each scrub rewrites the number, which replaces the span's DOM node.
-    // On touch the pointer is implicitly captured to that span, so replacing it
-    // drops the capture and the drag stops after one step ("one unit per
-    // swipe"). Capturing on contentDOM survives the re-render.
-    const capTarget = view.contentDOM;
-    try { capTarget.setPointerCapture(pointerId); } catch {}
-
     const teardown = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
-      try { capTarget.releasePointerCapture(pointerId); } catch {}
       view.dom.classList.remove("cm-scrubbing");
     };
 
-    // The document under the drag must still hold the text we last wrote —
-    // if something else changed it (demo switch mid-drag), abort the gesture
-    // instead of splicing numbers into unrelated code.
     const docMoved = () =>
       from + currentText.length > view.state.doc.length ||
       view.state.sliceDoc(from, from + currentText.length) !== currentText;
 
     const onMove = (e) => {
-      if (e.pointerId !== pointerId) return;
       const dx = e.clientX - startX;
-      if (!moved && Math.abs(dx) < 3) return;   // click vs drag threshold
+      if (!moved && Math.abs(dx) < 3) return; // click vs drag threshold
       moved = true;
       if (docMoved()) return teardown();
       view.dom.classList.add("cm-scrubbing");
-      // Shift = 10x finer once you want it; Alt = 10x coarser.
-      let gain = step;
+      let gain = step; // Shift = 10x finer, Alt = 10x coarser
       if (e.shiftKey) gain = step / 10;
       if (e.altKey) gain = step * 10;
       const value = startValue + Math.round(dx / PX_PER_STEP) * gain;
       const text = formatNumber(value, e.shiftKey ? decimals + 1 : decimals);
       if (text === currentText) return;
-      // Live updates bypass history: the whole drag becomes ONE undo step.
       view.dispatch({
-        changes: {from, to: from + currentText.length, insert: text},
+        changes: { from, to: from + currentText.length, insert: text },
         annotations: Transaction.addToHistory.of(false),
         userEvent: "input.scrub",
       });
       currentText = text;
     };
 
-    const onUp = (e) => {
-      if (e.pointerId !== pointerId) return;
+    const onUp = () => {
       teardown();
       if (!moved) {
-        // Plain click: behave like normal cursor placement.
-        view.dispatch({selection: {anchor: pos}});
+        view.dispatch({ selection: { anchor: pos } });
         view.focus();
         return;
       }
       if (currentText !== original && !docMoved()) {
-        // Collapse the drag into a single undoable change: silently restore
-        // the original, then re-apply the final value WITH history.
+        // Collapse the drag into a single undoable change.
         view.dispatch({
-          changes: {from, to: from + currentText.length, insert: original},
+          changes: { from, to: from + currentText.length, insert: original },
           annotations: Transaction.addToHistory.of(false),
         });
         view.dispatch({
-          changes: {from, to: from + original.length, insert: currentText},
+          changes: { from, to: from + original.length, insert: currentText },
           userEvent: "input.scrub",
         });
       }
@@ -188,7 +375,7 @@ const scrubDragHandler = EditorView.domEventHandlers({
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
-    return true; // tell CodeMirror the event is handled
+    return true;
   },
 });
 
