@@ -3,6 +3,13 @@
 The protogon is a prototyping board for the EMF Tildagon and Spaceagon badges.
 If you don't understand what this means, it probably means that this project is not useful to you. But feel free to go down the rabbit hole!
 
+* 64 kiB EEPROM
+* EEPROM write protection jumper (P1) sort is write protected
+* Qwiic connector
+* I2c pull ups
+* Power LED
+* max 3v3 current: 600mA
+
 ![Protogon, top side](renders/perspective.png)
 
 It can be used to prototype a hexpansion. It features EEPROM (with write-protect jumper) and Qwiic connections.
