@@ -1,0 +1,18 @@
+{
+  "$comment": "pcbjam static gallery, curated down to the single Protogon board. `root` is resolved relative to the pcbjam checkout root (that is where build-dist.sh runs publish-content, after staging the board + custom models into .gallery-src/codemyriad-protogon/). Each files[] path doubles as the in-browser MEMFS path, so the custom 3D models MUST be listed as packages3d/<name>.step to match the board's relative (model ...) refs.",
+  "projects": [
+    {
+      "slug": "codemyriad-protogon",
+      "name": "Codemyriad Protogon",
+      "description": "EMF 2026 Tildagon protoboard hexpansion — opens straight in the browser PCB editor, with 3D component models.",
+      "root": ".gallery-src/codemyriad-protogon",
+      "files": [
+        "codemyriad-protogon.kicad_pcb",
+        "codemyriad-protogon.kicad_pro",
+        "packages3d/HDR-TH_2P-P2.54-V-M.step",
+        "packages3d/CONN-SMD_4P-P1.00_SM04B-SRSS-TB-LF-SN.step",
+        "packages3d/TSSOP-8_L4.4-W3.0-P0.65-LS6.4-BL.step"
+      ]
+    }
+  ]
+}

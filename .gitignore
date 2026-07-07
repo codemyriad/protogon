@@ -8,3 +8,4 @@ _autosave-*
 *.lck
 *.rpt
 fp-info-cache
+.gstack/

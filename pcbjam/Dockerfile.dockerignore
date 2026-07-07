@@ -1,0 +1,8 @@
+# BuildKit uses this in place of a repo-root .dockerignore when building with
+# `-f pcbjam/Dockerfile`, so the Docker context stays tiny (a few MB of board +
+# scripts) instead of the whole repo (renders, fabrication, archive, .git ...).
+*
+!codemyriad-protogon.kicad_pcb
+!codemyriad-protogon.kicad_pro
+!JLC2KiCad_lib
+!pcbjam

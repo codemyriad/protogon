@@ -1,0 +1,52 @@
+# Build the self-contained "pcbjam + Protogon" static-site image and push it to
+# GHCR. This is where the built artifact is produced and stored; run.sh just
+# pulls it, and deploy-bunny.sh extracts its dist/ for BunnyCDN.
+name: pcbjam image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [pcbjam-preview]
+    paths:
+      - pcbjam/**
+      - codemyriad-protogon.kicad_pcb
+      - codemyriad-protogon.kicad_pro
+      - JLC2KiCad_lib/footprint/packages3d/**
+      - .github/workflows/pcbjam-image.yml
+
+concurrency:
+  group: pcbjam-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true # the custom 3D STEP models are LFS objects the build needs
+
+      - id: image
+        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/protogon-pcbjam" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: pcbjam/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image.outputs.ref }}:latest
+            ${{ steps.image.outputs.ref }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
