@@ -7,9 +7,10 @@
 //   @codemirror/lang-python@6.2.1  @lezer/highlight@1.2.3
 
 import {basicSetup} from "codemirror";
-import {EditorView, ViewPlugin, Decoration, WidgetType} from "@codemirror/view";
+import {EditorView, ViewPlugin, Decoration, WidgetType, keymap} from "@codemirror/view";
+import {indentWithTab} from "@codemirror/commands";
 import {EditorState, Transaction} from "@codemirror/state";
-import {python} from "@codemirror/lang-python";
+import {python, pythonLanguage} from "@codemirror/lang-python";
 import {syntaxTree, syntaxHighlighting, HighlightStyle} from "@codemirror/language";
 import {tags as t} from "@lezer/highlight";
 import {setDiagnostics, lintGutter} from "@codemirror/lint";
@@ -885,6 +886,147 @@ const boolTheme = EditorView.baseTheme({
 export const boolToggles = [boolHighlighter, boolClick, boolTheme];
 
 // ---------------------------------------------------------------------------
+// 1e. Badge-aware autocomplete
+//
+// Static analysis can't know these types, but WE do: every badge app is
+// `def draw(self, ctx)` — `ctx` is the firmware's uctx wrapper (and its
+// drawing methods return self, so the type survives chaining) — and button
+// polls always index BUTTON_TYPES. The member lists mirror overlay/ctx.py,
+// which mirrors the firmware.
+// ---------------------------------------------------------------------------
+
+// {label, sig, doc, boost?} — sig=null marks a property, sig "" a no-arg call.
+const CTX_MEMBERS = [
+  {label: "rgb", sig: "(r, g, b)", doc: "set the colour, channels 0..1", boost: 3},
+  {label: "rgba", sig: "(r, g, b, a)", doc: "colour with alpha, 0..1", boost: 3},
+  {label: "gray", sig: "(v)", doc: "grayscale colour, 0..1"},
+  {label: "rectangle", sig: "(x, y, w, h)", doc: "path a rectangle (screen is -120..120)", boost: 2},
+  {label: "round_rectangle", sig: "(x, y, w, h, radius)", doc: "path a rounded rectangle"},
+  {label: "arc", sig: "(x, y, radius, from, to, clockwise)", doc: "path an arc; angles in radians (full circle: 0, 6.2832, True)", boost: 2},
+  {label: "move_to", sig: "(x, y)", doc: "start a path segment", boost: 2},
+  {label: "line_to", sig: "(x, y)", doc: "path a line from the current point", boost: 2},
+  {label: "rel_move_to", sig: "(dx, dy)", doc: "move_to, relative to the current point"},
+  {label: "rel_line_to", sig: "(dx, dy)", doc: "line_to, relative to the current point"},
+  {label: "curve_to", sig: "(c1x, c1y, c2x, c2y, x, y)", doc: "cubic bézier to x,y"},
+  {label: "quad_to", sig: "(cx, cy, x, y)", doc: "quadratic bézier to x,y"},
+  {label: "rel_curve_to", sig: "(c1x, c1y, c2x, c2y, dx, dy)", doc: "cubic bézier, relative"},
+  {label: "rel_quad_to", sig: "(cx, cy, dx, dy)", doc: "quadratic bézier, relative"},
+  {label: "begin_path", sig: "", doc: "drop the current path"},
+  {label: "close_path", sig: "", doc: "close the current subpath"},
+  {label: "fill", sig: "", doc: "fill the current path", boost: 3},
+  {label: "stroke", sig: "", doc: "stroke the current path", boost: 3},
+  {label: "clip", sig: "", doc: "clip further drawing to the current path"},
+  {label: "text", sig: "(s)", doc: "draw text at the current point", boost: 2},
+  {label: "text_width", sig: "(s)", doc: "measured width of s in the current font"},
+  {label: "save", sig: "", doc: "push graphics state (pair with restore)", boost: 2},
+  {label: "restore", sig: "", doc: "pop graphics state", boost: 2},
+  {label: "translate", sig: "(x, y)", doc: "move the origin"},
+  {label: "scale", sig: "(sx, sy)", doc: "scale the coordinate system"},
+  {label: "rotate", sig: "(radians)", doc: "rotate the coordinate system"},
+  {label: "image", sig: "(path, x, y, w, h)", doc: "draw an image file"},
+  {label: "linear_gradient", sig: "(x0, y0, x1, y1)", doc: "gradient fill source; add_stop to colour it"},
+  {label: "radial_gradient", sig: "(x0, y0, r0, x1, y1, r1)", doc: "radial gradient fill source"},
+  {label: "conic_gradient", sig: "(cx, cy, start_angle, cycles)", doc: "conic gradient fill source"},
+  {label: "add_stop", sig: "(pos, color, alpha)", doc: "add a gradient stop, pos 0..1"},
+  {label: "logo", sig: "(x, y, dim)", doc: "the ctx logo"},
+  {label: "line_width", sig: null, doc: "stroke width in px", boost: 2},
+  {label: "font_size", sig: null, doc: "text size in px", boost: 2},
+  {label: "font", sig: null, doc: "font name (get_font_name lists them)"},
+  {label: "text_align", sig: null, doc: "LEFT / CENTER / RIGHT / END", boost: 1},
+  {label: "text_baseline", sig: null, doc: "TOP / HANGING / MIDDLE / BOTTOM"},
+  {label: "global_alpha", sig: null, doc: "0..1 alpha applied to everything"},
+  {label: "image_smoothing", sig: null, doc: "bilinear filtering for images (0/1)"},
+  {label: "x", sig: null, doc: "current point x (read-only)"},
+  {label: "y", sig: null, doc: "current point y (read-only)"},
+];
+
+const CTX_CONSTANTS = [
+  "LEFT", "RIGHT", "CENTER", "END", "TOP", "HANGING", "MIDDLE", "BOTTOM",
+  "CLEAR", "BEVEL", "NONE", "COPY",
+];
+
+const BUTTON_NAMES = ["UP", "DOWN", "LEFT", "RIGHT", "CONFIRM", "CANCEL"];
+
+const MATH_MEMBERS = (
+  "pi tau e inf nan sin cos tan asin acos atan atan2 sqrt pow exp log " +
+  "floor ceil fabs fmod trunc radians degrees hypot copysign isnan isinf"
+).split(" ");
+
+const ctxOptions = [
+  ...CTX_MEMBERS.map((m) => ({
+    label: m.label,
+    type: m.sig === null ? "property" : "method",
+    detail: m.sig || (m.sig === "" ? "()" : undefined),
+    info: m.doc,
+    apply: m.sig === null ? m.label : m.sig === "" ? `${m.label}()` : `${m.label}(`,
+    boost: m.boost || 0,
+  })),
+  ...CTX_CONSTANTS.map((c) => ({ label: c, type: "constant" })),
+];
+
+const mathOptions = MATH_MEMBERS.map((m) => ({
+  label: m,
+  type: /^(pi|tau|e|inf|nan)$/.test(m) ? "constant" : "function",
+}));
+
+function badgeCompletions(context) {
+  const line = context.state.doc.lineAt(context.pos);
+  const before = context.state.sliceDoc(line.from, context.pos);
+  const word = /\w*$/.exec(before)[0];
+  const from = context.pos - word.length;
+  if (from === context.pos && !context.explicit && !/[.["']$/.test(before)) return null;
+
+  // ctx.<member>, including chained calls (drawing methods return self):
+  // ctx.rgb(1, 0, 0).arc(0, 0, 40, 0, TAU, True).<cursor>
+  if (
+    /(?:^|[^.\w])ctx\s*\.\s*\w*$/.test(before) ||
+    /(?:^|[^.\w])ctx\b[^;#]*\)\s*\.\s*\w*$/.test(before)
+  ) {
+    return { from, options: ctxOptions, validFor: /^\w*$/ };
+  }
+
+  // BUTTON_TYPES["<name>"] — complete the key and close the bracket.
+  const bt = /BUTTON_TYPES\s*\[\s*(["']?)(\w*)$/.exec(before);
+  if (bt) {
+    const quote = bt[1];
+    return {
+      from,
+      options: BUTTON_NAMES.map((n) => ({
+        label: n,
+        type: "constant",
+        apply: quote ? `${n}${quote}]` : `"${n}"]`,
+      })),
+      validFor: /^\w*$/,
+    };
+  }
+
+  if (/(?:^|[^.\w])math\s*\.\s*\w*$/.test(before)) {
+    return { from, options: mathOptions, validFor: /^\w*$/ };
+  }
+
+  if (/(?:^|[^.\w])tildagonos\s*\.\s*\w*$/.test(before)) {
+    return {
+      from,
+      options: [
+        { label: "leds", type: "property", info: "the 12 ring LEDs: leds[1..12] = (r, g, b) 0..255" },
+      ],
+      validFor: /^\w*$/,
+    };
+  }
+  if (/tildagonos\s*\.\s*leds\s*\.\s*\w*$/.test(before)) {
+    return {
+      from,
+      options: [{ label: "write", type: "method", apply: "write()", info: "push the LED colours to the ring" }],
+      validFor: /^\w*$/,
+    };
+  }
+
+  return null;
+}
+
+const badgeAutocomplete = pythonLanguage.data.of({ autocomplete: badgeCompletions });
+
+// ---------------------------------------------------------------------------
 // 2. Theme — the redesign's code area: #161616, IBM Plex Mono 13.5/1.62,
 // 44px right-aligned gutter, and its syntax palette.
 // ---------------------------------------------------------------------------
@@ -927,6 +1069,17 @@ const playgroundTheme = EditorView.theme({
     border: "1px solid rgba(255, 255, 255, 0.12)",
     color: "#e8e8e5",
   },
+  ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
+    backgroundColor: "rgba(174, 203, 58, 0.16)",
+    color: "#f2f2ef",
+  },
+  ".cm-completionMatchedText": {textDecoration: "none", color: "#c5df5e"},
+  ".cm-completionDetail": {color: "#7d7d78", fontStyle: "normal", marginLeft: "0.5em"},
+  ".cm-completionInfo": {
+    backgroundColor: "#1d1d1d",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    color: "#c6c6c1",
+  },
 }, {dark: true});
 
 const playgroundHighlight = HighlightStyle.define([
@@ -959,6 +1112,10 @@ export function createEditor({parent, doc, onChange, debounceMs = 200}) {
       extensions: [
         basicSetup,
         python(),
+        badgeAutocomplete,
+        // Tab indents (Shift-Tab dedents) instead of moving focus — this is
+        // a code editor; Esc then Tab still escapes for keyboard users.
+        keymap.of([indentWithTab]),
         playgroundTheme,
         syntaxHighlighting(playgroundHighlight),
         lintGutter(),
