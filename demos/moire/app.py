@@ -9,12 +9,7 @@
 #   is a moire: you've seen it where two fences overlap, or when a striped
 #   shirt shimmers on TV.
 #
-# PRIOR ART  moire interference patterns -- https://en.wikipedia.org/wiki/Moir%C3%A9_pattern
-#
 # BUTTONS   RIGHT or LEFT swap circles <-> hexagons - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py moire --gif
-#   badge: drop demos/moire into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

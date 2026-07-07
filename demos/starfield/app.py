@@ -9,13 +9,7 @@
 #   and are recycled at the back. Tilting the badge shoves the whole field
 #   sideways -- that is how you steer.
 #
-# PRIOR ART  the classic perspective-starfield demo effect (and the old Windows
-#            "Starfield Simulation" screensaver) -- https://en.wikipedia.org/wiki/Demo_effect
-#
 # BUTTONS   tilt steers (W/A/S/D in the sim) - UP/DOWN warp speed - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py starfield --gif
-#   badge: drop demos/starfield into the official simulator's sim/apps/ (see README)
 import app
 import math
 import random

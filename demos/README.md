@@ -10,8 +10,9 @@ Each demo is a **standalone, unmodified badge app** (`demos/<name>/app.py`, a
 `class … (app.App)` with `__app_export__`), named for what it shows:
 `tixy`, `moire`, `qix`, `starfield`, `tunnel`, `kaleidoscope`, `hopalong`,
 `matrixrain`, `plasma`, `ledring`, `pipes`, `cellular`, `ribbons`,
-`metaballs`, `timescope`. Each app's header credits its prior art — most of
-these effects have decades of history.
+`metaballs`, `timescope`. Where a demo builds on someone's work, its header
+says so ("Credits:" / "See also:") — most of these effects have decades of
+history.
 
 ## The demos
 

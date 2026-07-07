@@ -9,13 +9,10 @@
 #   the next colour. Once most of the board is pipe, everything wipes clean
 #   and the plumbing begins again.
 #
-# PRIOR ART  the Windows NT "3D Pipes" screensaver --
+# See also:  the Windows NT "3D Pipes" screensaver --
 #            https://devblogs.microsoft.com/oldnewthing/20240611-00/?p=109881
 #
 # BUTTONS   CONFIRM clears the board - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py pipes --gif
-#   badge: drop demos/pipes into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES

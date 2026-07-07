@@ -8,12 +8,7 @@
 #   Same numbers in, same light out -- glass and bezel can never drift apart.
 #   (A system service owns the LEDs; we borrow the ring and return it on exit.)
 #
-# PRIOR ART  the classic Larson scanner / Cylon eye -- https://en.wikipedia.org/wiki/Larson_scanner
-#
 # BUTTONS   LEFT/RIGHT cycle comet -> pulse -> rainbow - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py ledring --gif
-#   badge: drop demos/ledring into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

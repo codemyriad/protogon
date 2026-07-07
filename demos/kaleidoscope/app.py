@@ -8,13 +8,7 @@
 #   centre, and stamp a flipped twin each time so the wedges mirror like
 #   glass. The doodle is random; the symmetry is what makes it beautiful.
 #
-# PRIOR ART  the kaleidoscope, invented by David Brewster in 1817 --
-#            https://en.wikipedia.org/wiki/Kaleidoscope
-#
 # BUTTONS   CONFIRM new random doodle - RIGHT/LEFT change symmetry - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py kaleidoscope --gif
-#   badge: drop demos/kaleidoscope into the official simulator's sim/apps/ (see README)
 import app
 import math
 import random

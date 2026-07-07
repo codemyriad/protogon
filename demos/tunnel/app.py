@@ -9,12 +9,7 @@
 #   but the small far-away rings drift the most while the big nearest
 #   ring barely moves. Your brain sees that mismatch and says "tunnel".
 #
-# PRIOR ART  the demoscene tunnel effect -- https://en.wikipedia.org/wiki/Demo_effect
-#
 # BUTTONS   LEFT/RIGHT cycle colour scheme - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py tunnel --gif
-#   badge: drop demos/tunnel into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

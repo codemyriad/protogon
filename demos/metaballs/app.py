@@ -9,13 +9,10 @@
 #   bright bridge between them -- your eye reads it as goo merging.
 #   Each blob follows its own slightly detuned orbit, so they keep meeting.
 #
-# PRIOR ART  metaballs, invented by Jim Blinn for Carl Sagan's Cosmos --
+# Credits:   metaballs, invented by Jim Blinn for Carl Sagan's Cosmos --
 #            https://en.wikipedia.org/wiki/Metaballs
 #
 # BUTTONS   RIGHT/LEFT change blob count (3-5) - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py metaballs --gif
-#   badge: drop demos/metaballs into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

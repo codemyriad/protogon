@@ -9,13 +9,10 @@
 #   petals nobody designed. We keep the last few hundred spots on screen,
 #   colour them rainbow by age, and slowly spin the whole cloud.
 #
-# PRIOR ART  Barry Martin's Hopalong attractor, popularised by A. K. Dewdney in
+# See also:  Barry Martin's Hopalong attractor, popularised by A. K. Dewdney in
 #            Scientific American (Sept 1986) -- https://en.wikibooks.org/wiki/Fractals/Hopalong
 #
 # BUTTONS   RIGHT/LEFT next/previous preset (fresh cloud) - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py hopalong --gif
-#   badge: drop demos/hopalong into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

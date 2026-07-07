@@ -9,12 +9,9 @@
 #   anchor and glides through the midpoint beyond it, the classic trick for
 #   a spline with no kinks. Copies with the wave shifted along braid together.
 #
-# PRIOR ART  in the spirit of the old "Mystify" screensaver -- https://en.wikipedia.org/wiki/Mystify
+# See also:  in the spirit of the old "Mystify" screensaver -- https://en.wikipedia.org/wiki/Mystify
 #
 # BUTTONS   RIGHT/LEFT change how many ribbons braid - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py ribbons --gif
-#   badge: drop demos/ribbons into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

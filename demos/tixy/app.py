@@ -9,12 +9,9 @@
 #       close to 0 -> tiny dot       close to 1 -> big dot
 #   That's the whole machine. Five formulas are included -- write your own.
 #
-# PRIOR ART  tixy.land by Martin Kleppe (@aemkei) -- https://tixy.land
+# Credits:   tixy.land by Martin Kleppe (@aemkei) -- https://tixy.land
 #
 # BUTTONS   LEFT/RIGHT swap formula - UP/DOWN change speed - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py tixy --gif
-#   badge: drop demos/tixy into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

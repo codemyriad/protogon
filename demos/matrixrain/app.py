@@ -9,13 +9,7 @@
 #   bottom? (then restart above the top with a fresh speed and tail length).
 #   Letters that would land outside the round glass are simply not drawn.
 #
-# PRIOR ART  the Matrix digital rain (The Matrix, 1999) --
-#            https://en.wikipedia.org/wiki/Matrix_digital_rain
-#
 # BUTTONS   RIGHT/LEFT cycle the colour - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py matrixrain --gif
-#   badge: drop demos/matrixrain into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES

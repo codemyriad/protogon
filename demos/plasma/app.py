@@ -8,12 +8,7 @@
 #   centre. Where crests pile up a tile glows hot; where waves cancel it
 #   goes cold. A palette turns hot-and-cold into colour -- that's plasma.
 #
-# PRIOR ART  the demoscene plasma effect -- https://en.wikipedia.org/wiki/Plasma_effect
-#
 # BUTTONS   LEFT/RIGHT swap palette - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py plasma --gif
-#   badge: drop demos/plasma into the official simulator's sim/apps/ (see README)
 import app
 import math
 from events.input import Buttons, BUTTON_TYPES

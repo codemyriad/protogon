@@ -177,7 +177,7 @@ for name in os.listdir(demos_dir):
     n, rest = int(m.group(1)), m.group(2)
     title = rest.split(".")[0].strip()
     blurb = ".".join(rest.split(".")[1:]).strip().rstrip(".")
-    prior = re.search(r"PRIOR ART.*?(https?://\S+)", src, re.S)
+    prior = re.search(r"(?:See also:|Credits:).*?(https?://\S+)", src, re.S)
     entries.append({"n": n, "id": name, "title": title, "blurb": blurb,
                     "prior": prior.group(1) if prior else None, "src": src})
 entries.sort(key=lambda e: e["n"])
@@ -195,7 +195,7 @@ for e in entries:
     parts.append("")
     links = [f"[play with it live](https://silvio-demos.pgs.sh/#{e['id']})"]
     if e["prior"]:
-        links.append(f"[prior art]({e['prior']})")
+        links.append(f"[see also]({e['prior']})")
     parts.append(f"**{e['title']}** · " + " · ".join(links))
     parts.append("")
     parts.append("```python")

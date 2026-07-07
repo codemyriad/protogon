@@ -7,12 +7,9 @@
 #   new ones bright and thick. No blur trick: the trail is just yesterday's
 #   shapes politely fading away. The 12 LED ring breathes the head colour.
 #
-# PRIOR ART  Qix, the 1981 Taito arcade game -- https://en.wikipedia.org/wiki/Qix
+# See also:  Qix, the 1981 Taito arcade game -- https://en.wikipedia.org/wiki/Qix
 #
 # BUTTONS   CONFIRM add a point (2->3->4) - RIGHT/LEFT palette - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py qix --gif
-#   badge: drop demos/qix into the official simulator's sim/apps/ (see README)
 import app
 import math
 import random

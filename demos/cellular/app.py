@@ -8,14 +8,11 @@
 #   tire, rest -- rest ignites beside exactly 2 sparks. CYCLIC: four colours,
 #   each eating the one before it. Nobody plans it; patterns grow themselves.
 #
-# PRIOR ART  Conway's Game of Life -- https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+# See also:  Conway's Game of Life -- https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
 #            Brian's Brain -- https://en.wikipedia.org/wiki/Brian%27s_Brain
 #            cyclic CA -- https://en.wikipedia.org/wiki/Cyclic_cellular_automaton
 #
 # BUTTONS   RIGHT/LEFT next rule - CONFIRM fresh random seed - CANCEL exits
-#
-#   sim:   python3 demos/sim/run.py cellular --gif
-#   badge: drop demos/cellular into the official simulator's sim/apps/ (see README)
 import app
 import random
 from events.input import Buttons, BUTTON_TYPES
