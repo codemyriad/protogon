@@ -1176,7 +1176,7 @@ code {
     height: 100%;
   }
 
-  /* ---- the floating disc (mini) ---- */
+  /* ---- the floating badge (mini) ---- */
   body.float-active #badge-pane {
     position: fixed;
     z-index: 40;
@@ -1189,28 +1189,31 @@ code {
     padding: 0;
     margin: 0;
     gap: 0;
-    overflow: hidden;
-    border-radius: 50%;
-    border: 1px solid var(--line-10);
-    background: var(--console);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(0, 0, 0, 0.25);
+    background: transparent;
+    /* the hexagon clip lives on #badge-stage; a drop-shadow filter (unlike
+       box-shadow) hugs that clipped silhouette */
+    filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55));
     touch-action: none;
-    transition: box-shadow 120ms ease;
+    transition: filter 120ms ease;
   }
   body.float-active.badge-dragging #badge-pane {
     transition: none;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(174, 203, 58, 0.35);
+    filter: drop-shadow(0 16px 40px rgba(0, 0, 0, 0.6))
+      drop-shadow(0 0 6px rgba(174, 203, 58, 0.45));
     cursor: grabbing;
   }
 
-  /* In mini, show the screen + LED ring only: scale the badge up so the ring
-     fills the disc and the outer artwork / buttons crop away. The badge itself
-     is inert (drag the disc; no accidental tilt or button presses). */
+  /* In mini, show the screen + LED ring: scale the badge up so the ring
+     fills the tile and clip the tile to the badge's own hexagon. The badge
+     itself is inert (drag the tile; no accidental tilt or button presses). */
   body.float-active:not(.badge-expanded) #badge-pane { cursor: grab; }
   body.float-active:not(.badge-expanded) #badge-stage {
+    position: absolute;
+    inset: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
+    overflow: hidden;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+    background: var(--console);
   }
   body.float-active:not(.badge-expanded) #badge {
     width: 100%;
@@ -1262,6 +1265,7 @@ code {
     border: none;
     border-radius: 0;
     box-shadow: none;
+    filter: none;
     background: var(--bg);
     display: flex;
     flex-direction: column;
