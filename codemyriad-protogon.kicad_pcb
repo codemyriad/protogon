@@ -4370,6 +4370,28 @@
 			(layer "F.Fab")
 			(uuid "19b155af-3166-4f0d-8804-b1caed0975e3")
 		)
+		(fp_poly
+			(pts
+				(xy 0.5 1.55) (xy 0.5 2.35) (xy -0.3 1.95)
+			)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill yes)
+			(layer "F.SilkS")
+			(uuid "b1ccc821-115d-469f-a525-14cffc645c7d")
+		)
+		(fp_line
+			(start -0.5 1.55)
+			(end -0.5 2.35)
+			(stroke
+				(width 0.15)
+				(type solid)
+			)
+			(layer "F.SilkS")
+			(uuid "2fa763cb-fad2-4e2e-b2f5-56367ba8d509")
+		)
 		(fp_text user "${REFERENCE}"
 			(at 0 0 0)
 			(layer "F.Fab")
