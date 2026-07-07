@@ -23,7 +23,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 GRID     = 24     # 4<n<40  cells per side .......... try 12 (with CELL 18: fat pipes)
 CELL     = 9      # 4<n<40  px between cell centres .. the grid step; try 18
@@ -136,7 +136,7 @@ class Pipes(app.App):
 __app_export__ = Pipes
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap STRAIGHT to 0.0: the head coin-flips at every cell and scribbles;
+# - drag or tap STRAIGHT to 0.0: the head coin-flips at every cell and scribbles;
 #   at 0.95 it shoots long straight runs and only turns when it must
 # - GRID = 12, CELL = 18, PIPE_W = 11: chunky retro plumbing, same footprint
 # - FULL = 0.98: watch pipes squeeze into the last free corners before the wipe

@@ -147,10 +147,11 @@ write the demo a certain way. They are all plain Python — a badge or the
 official sim ignores them:
 
 - **Tweak numbers / swatch**: any plain int/float literal is drag-to-change
-  (double-tap for a slider on a touchscreen), and any three `0.0–1.0` literals
-  that form an `(r, g, b)` tuple or `ctx.rgb(...)` arguments get a tap-to-open
-  colour picker. So hoist the fun knobs into the `# --- tweak me ---` block as
-  bare literals and express colours as `(r, g, b)` constants, not computed/HSV
+  (double-click, or tap on a touchscreen, for a slider), and any three
+  `0.0–1.0` literals that form an `(r, g, b)` tuple or `ctx.rgb(...)` arguments
+  get a tap-to-open colour picker (those numbers stay with the picker — no
+  slider). So hoist the fun knobs into the `# --- tweak me ---` block as bare
+  literals and express colours as `(r, g, b)` constants, not computed/HSV
   expressions.
 - **Slider ranges** (`# MIN<n<MAX`): a note like `GRID = 16  # 4<n<24` sets
   that number's slider bounds. One number per line uses `n`; with several on a

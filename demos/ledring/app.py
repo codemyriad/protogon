@@ -25,7 +25,7 @@ from tildagonos import tildagonos
 TAU = 6.28318
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 SPEED = 1.6                 # -6<n<6   comet speed, LEDs per second .... race it: 5.0
 TAIL = 3.5                  # 0<n<16   LEDs the tail fades over . try 1.5 (spark) or 6.0
@@ -142,7 +142,7 @@ class Ledring(app.App):
 __app_export__ = Ledring
 
 # ------------------------------ try this --------------------------------------
-# - in pulse mode, drag / double-tap the 0.0 in "i * 0.0" up to 0.5: the shared heartbeat
+# - in pulse mode, drag or tap the 0.0 in "i * 0.0" up to 0.5: the shared heartbeat
 #   unrolls into a wave chasing itself around the ring
 # - set TAIL to 12.0: the whole ring glows and the comet becomes a soft tide
 # - make SPEED negative (-1.6): comet, pointer and LEDs all reverse together --

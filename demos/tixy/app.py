@@ -22,7 +22,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen). The
+# Drag a number to change it (double-click, or tap on a phone, for a slider). The
 # "MIN<n<MAX" notes set each slider's range; a/b/c pick items inside a tuple.
 GRID    = 16                  # 4<n<24  dots per side.. 8 = chunky, 24 chugs
 SPACING = 13.0                # 6<n<24  px between dot centres.. bigger = airier
@@ -138,7 +138,7 @@ class Tixy(app.App):
 __app_export__ = Tixy
 
 # ------------------------------ try this --------------------------------------
-# - click ripple above, then nudge the 7.5 in ripple() (drag / double-tap): the splash follows
+# - click ripple above, then nudge the 7.5 in ripple() (drag or tap): the splash follows
 # - in waves(), change math.cos to math.sin -- then try math.tan (chaos)
 # - add your own formula:  def stripes(t, i, x, y): return math.sin(x - t * 3)
 #   then add a "# LIVE = stripes  #: stripes" line to the picker and click it

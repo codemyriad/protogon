@@ -23,7 +23,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 # Each preset row is (a, b, c, zoom). The attractor is touchy: nudge an a, b
 # or c a little and a completely different creature grows in its place.
@@ -137,7 +137,7 @@ class Hopalong(app.App):
 __app_export__ = Hopalong
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap the first preset's 0.35 up towards 1.0 in tiny steps and watch the
+# - drag or tap the first preset's 0.35 up towards 1.0 in tiny steps and watch the
 #   creature melt and re-grow a new shape at every stop
 # - set SPIN to 0.0 and ZOOM to 12.0 for a still, close-up portrait
 # - add a preset: put (1.1, 0.5, 1.0, 2.5) at the end of PRESETS, then press

@@ -23,7 +23,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 COLS     = 15     # 0<n<32   columns of rain ........ try 8 (sparse) or 22 (dense)
 CELL     = 15     # 4<n<40   glyph size AND row spacing, px .. chunky rain: 24
@@ -114,5 +114,5 @@ __app_export__ = Matrixrain
 
 # ------------------------------ try this --------------------------------------
 # - set GLYPHS = "01" for binary rain, or spell something: "EMF2026 "
-# - drag / double-tap FLICKER to 0.9 and the letters boil; at 0.0 each column's text freezes
+# - drag or tap FLICKER to 0.9 and the letters boil; at 0.0 each column's text freezes
 # - CELL = 24 with COLS = 9 makes chunky billboard rain (the font follows CELL)

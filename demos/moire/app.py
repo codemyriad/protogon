@@ -22,7 +22,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 RINGS    = 11                  # 4<n<24   rings per family ....... try 6 (airy) or 16
 RING_GAP = 8.0                 # 2<n<16   px between ring radii .. squeeze them: 5.0
@@ -116,7 +116,7 @@ __app_export__ = Moire
 # ------------------------------ try this --------------------------------------
 # - set STAGGER to 0.0: each family snaps into a rigid bullseye, and you get
 #   two targets orbiting each other instead of a swirling interference cloud
-# - drag / double-tap the 1.3 in the wander line to 1.0 -- every centre now travels a
+# - drag or tap the 1.3 in the wander line to 1.0 -- every centre now travels a
 #   perfect circle, so the whole pattern stops morphing and just spins
-# - press RIGHT for polygons, then drag / double-tap SIDES down to 3: drifting triangle
+# - press RIGHT for polygons, then drag or tap SIDES down to 3: drifting triangle
 #   moire (4 gives diamonds, 12 is nearly circles again)

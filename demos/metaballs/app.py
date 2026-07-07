@@ -25,7 +25,7 @@ from system.scheduler.events import RequestForegroundPushEvent
 TAU = 6.28318
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 SPEED   = 1.0    # 0<n<5    pace of the whole dance ...... try 0.3 (lava lamp) or 2.5
 ORBIT   = 40     # 0<n<120  average orbit radius, px ..... try 70 (blobs hug the rim)
@@ -97,9 +97,9 @@ class Metaballs(app.App):
 __app_export__ = Metaballs
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap SWAY up to 60: the blobs dive right through the middle and pile
+# - drag or tap SWAY up to 60: the blobs dive right through the middle and pile
 #   into one white-hot blaze every time they cross
 # - set LAYERS to 1 -- suddenly it's just flat circles. The whole metaball
 #   illusion lives in that stack of fading discs
-# - drag / double-tap the 0.9 at the end of the y line down to 0.3 and the dance
+# - drag or tap the 0.9 at the end of the y line down to 0.3 and the dance
 #   flattens into a shallow band, like blobs on a horizon

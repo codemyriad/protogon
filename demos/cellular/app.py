@@ -23,7 +23,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 GRID       = 20                # 4<n<28  cells per side .... try 14; >20 chugs the badge
 CELL       = 10                # 4<n<20  px per cell ....... try 11 to fill the screen

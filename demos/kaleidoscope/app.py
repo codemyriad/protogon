@@ -23,7 +23,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 SYMMETRIES = (6, 8, 12)   # wedge counts RIGHT/LEFT step through . try (3, 5, 7)
 WHIRL      = 0.2          # -1<n<2   spin of the whole flake ....... try 1.0, or -0.4
@@ -136,7 +136,7 @@ class Kaleidoscope(app.App):
 __app_export__ = Kaleidoscope
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap the 12 in SYMMETRIES up to 24, press RIGHT until it's live: lace doily
+# - drag or tap the 12 in SYMMETRIES up to 24, press RIGHT until it's live: lace doily
 # - set WHIRL to -0.4 and SQUASH to 1.0 -- reverse spin, perfectly round orbits
 # - in motif(), change line_to(self.reach, 0) to line_to(self.reach, 40):
 #   every spoke bends, and the mirrors fold the bends into zigzag stars

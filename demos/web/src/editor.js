@@ -16,8 +16,10 @@ import {setDiagnostics, lintGutter} from "@codemirror/lint";
 
 // ---------------------------------------------------------------------------
 // 1. Tweakable number literals
-//   desktop: drag a number to scrub it
-//   mobile:  double-tap a number to open a slider
+//   desktop: drag a number to scrub it (clamped to its range), or
+//            double-click it for a slider
+//   mobile:  tap a number to open a slider
+// Colour-channel numbers are skipped here — their swatch/picker covers them.
 //
 // A `MIN<var<MAX` annotation anywhere on the line sets the slider's range.
 // With one number on the line the letter is usually `n` (`# 3<n<22`); with
@@ -279,18 +281,59 @@ function openSlider(view, tok) {
   activeSlider = close;
 }
 
-// --- pointer handler: mouse drags, touch double-taps -----------------------
+// A literal that is one channel of a colour swatch (an (r,g,b) tuple or a
+// ctx.rgb/rgba call) is driven by the picker, not by the slider — leave it be.
+function isColorLiteral(state, tok) {
+  const line = state.doc.lineAt(tok.from);
+  let hit = false;
+  syntaxTree(state).iterate({
+    from: line.from,
+    to: line.to,
+    enter(node) {
+      if (hit) return false;
+      let nums = null;
+      if (node.name === "ArgList") {
+        const call = node.node.parent;
+        if (!call || call.name !== "CallExpression") return;
+        const callee = state.sliceDoc(call.from, node.from);
+        if (!/\.(rgb|rgba)$/.test(callee)) return;
+        nums = colorNumbers(state, node.node, false);
+      } else if (node.name === "TupleExpression") {
+        nums = colorNumbers(state, node.node, true);
+      }
+      if (nums && nums.some((n) => n.from === tok.from)) hit = true;
+    },
+  });
+  return hit;
+}
 
-// Double-tap tracking (mobile). Two taps on the same literal within 400 ms.
-let lastTapFrom = -1;
-let lastTapAt = 0;
-function isSecondTap(from) {
+// The slider is the "open a control on a number" gesture (mobile tap, desktop
+// double-click). Colour channels are excluded — their swatch already covers it.
+function maybeOpenSlider(view, tok) {
+  if (isColorLiteral(view.state, tok)) return false;
+  openSlider(view, tok);
+  return true;
+}
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// Two activations on the same literal within 400 ms = a double-click. Tracked
+// manually rather than via the `dblclick` event, which preventDefault() on
+// pointerdown can suppress.
+let lastActFrom = -1;
+let lastActAt = 0;
+function isDoubleActivate(from) {
   const now = performance.now();
-  const dbl = from === lastTapFrom && now - lastTapAt < 400;
-  lastTapFrom = dbl ? -1 : from;
-  lastTapAt = now;
+  const dbl = from === lastActFrom && now - lastActAt < 400;
+  lastActFrom = dbl ? -1 : from;
+  lastActAt = now;
   return dbl;
 }
+
+// --- pointer handler -------------------------------------------------------
+// Desktop: drag a number to scrub it (clamped to its annotated range), or
+// double-click for the slider. Mobile: a single tap opens the slider (a
+// double-tap on a tiny literal was too hard to land twice).
 
 const scrubDragHandler = EditorView.domEventHandlers({
   pointerdown(event, view) {
@@ -300,19 +343,34 @@ const scrubDragHandler = EditorView.domEventHandlers({
     const tok = numberTokenAt(view.state, pos);
     if (!tok) return false;
 
-    // Mobile: no swipe-scrub. A double-tap opens the slider; a single tap
-    // falls through to normal cursor placement.
+    // Mobile: a tap (not a scroll) on a number opens its slider. Re-resolve
+    // the token when the finger lifts so a slightly-off tap still counts.
     if (event.pointerType === "touch") {
-      if (isSecondTap(tok.from)) {
-        event.preventDefault();
-        openSlider(view, tok);
-        return true;
-      }
-      return false;
+      const sx = event.clientX;
+      const sy = event.clientY;
+      const from = tok.from;
+      const onUp = (e) => {
+        window.removeEventListener("pointerup", onUp, true);
+        window.removeEventListener("pointercancel", onUp, true);
+        if (e.pointerType && e.pointerType !== "touch") return;
+        if (Math.hypot(e.clientX - sx, e.clientY - sy) > 10) return; // a scroll
+        const p = view.posAtCoords({ x: e.clientX, y: e.clientY });
+        const t = p != null ? numberTokenAt(view.state, p) : null;
+        if (t && t.from === from) maybeOpenSlider(view, t);
+      };
+      // Capture phase so CodeMirror's own touch handling can't swallow it.
+      window.addEventListener("pointerup", onUp, true);
+      window.addEventListener("pointercancel", onUp, true);
+      return false; // let the tap place the cursor / a drag scroll
     }
 
-    // Desktop mouse / pen: drag to scrub.
+    // Desktop mouse / pen: a double-click opens the slider; otherwise drag.
     event.preventDefault();
+    if (isDoubleActivate(tok.from)) {
+      maybeOpenSlider(view, tok);
+      return true;
+    }
+    const range = rangeForToken(view.state, tok); // clamp the drag if annotated
     const startX = event.clientX;
     const original = tok.text;
     const { decimals, step } = stepInfo(original);
@@ -341,7 +399,8 @@ const scrubDragHandler = EditorView.domEventHandlers({
       let gain = step; // Shift = 10x finer, Alt = 10x coarser
       if (e.shiftKey) gain = step / 10;
       if (e.altKey) gain = step * 10;
-      const value = startValue + Math.round(dx / PX_PER_STEP) * gain;
+      let value = startValue + Math.round(dx / PX_PER_STEP) * gain;
+      if (range) value = clamp(value, range.min, range.max);
       const text = formatNumber(value, e.shiftKey ? decimals + 1 : decimals);
       if (text === currentText) return;
       view.dispatch({
@@ -566,14 +625,23 @@ const swatchPlugin = ViewPlugin.fromClass(class {
 const swatchTheme = EditorView.baseTheme({
   ".cm-color-swatch": {
     display: "inline-block",
-    width: "0.85em",
-    height: "0.85em",
+    width: "0.9em",
+    height: "0.9em",
     borderRadius: "3px",
     border: "1px solid rgba(255,255,255,0.4)",
     marginRight: "5px",
-    verticalAlign: "-0.1em",
+    verticalAlign: "-0.12em",
     cursor: "pointer",
     touchAction: "none",
+  },
+  // A tiny inline chip is a hard tap target — enlarge it on touch screens.
+  "@media (pointer: coarse)": {
+    ".cm-color-swatch": {
+      width: "1.35em",
+      height: "1.35em",
+      verticalAlign: "-0.35em",
+      marginRight: "7px",
+    },
   },
 });
 

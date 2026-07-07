@@ -22,7 +22,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 RIBBONS    = 3      # 1<n<12   ribbons in the braid (RIGHT/LEFT change this too).. try 6
 R_MIN, R_MAX = 2, 6  # 1<a<12  1<b<12  ribbon-count range RIGHT/LEFT walks .. try 1, 9
@@ -105,7 +105,7 @@ class Ribbons(app.App):
 __app_export__ = Ribbons
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap SWAY to 110.0 and THICKNESS to 6.0 -- fat ribbons that fill the badge
+# - drag or tap SWAY to 110.0 and THICKNESS to 6.0 -- fat ribbons that fill the badge
 # - set WOBBLE to 0.0 for one clean repeating braid, then ease it back up and
 #   watch the pattern loosen into drift
 # - the 0.9 in anchor_points() is the twist between neighbours: try 0.1 (lazy

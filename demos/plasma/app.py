@@ -21,7 +21,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 GRID      = 16               # 4<n<24  tiles per side .. try 8 (chunky); 24 chugs the badge
 SPEED     = 1.0              # 0<n<5   animation speed ......... 0.3 lava lamp, 3.0 boiling
@@ -118,7 +118,7 @@ __app_export__ = Plasma
 # ------------------------------ try this --------------------------------------
 # - set WAVE_X, WAVE_Y and WAVE_DIAG all to 0.0: the sliding waves go flat and
 #   a pure bullseye is left pulsing out of the centre
-# - in heat(), drag / double-tap the rings wave's 1.7 down to 0.0 -- the rings freeze in
+# - in heat(), drag or tap the rings wave's 1.7 down to 0.0 -- the rings freeze in
 #   place while the other three waves keep sliding through them
 # - add a palette:  def mint(v): return (v * 0.3, v, v * 0.7)
 #   then put it in PALETTES and press RIGHT until the screen turns minty

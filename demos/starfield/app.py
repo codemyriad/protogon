@@ -26,7 +26,7 @@ from system.patterndisplay.events import PatternDisable, PatternEnable
 from tildagonos import tildagonos
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 STARS     = 70              # 0<n<200   how many stars ...... try 150 (a blizzard) or 20 (calm)
 FOV       = 90.0            # 20<n<200  camera zoom ......... 40.0 snow globe, 160.0 warp tunnel
@@ -143,7 +143,7 @@ class Starfield(app.App):
 __app_export__ = Starfield
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap FOV down to 40.0: the field huddles into a snow globe; now push it
+# - drag or tap FOV down to 40.0: the field huddles into a snow globe; now push it
 #   past 150.0 and you are staring down a warp tunnel
 # - set SMOOTH to 0.02 and tilt: the steering keeps gliding long after you
 #   level out, like a ship slow to answer the helm

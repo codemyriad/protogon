@@ -23,7 +23,7 @@ from system.patterndisplay.events import PatternDisable, PatternEnable
 from tildagonos import tildagonos
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 TRAIL     = 42                 # 0<n<100   shapes remembered ....... try 12 (crisp) or 80
 BOX       = 106                # 20<n<120  half-width of the bounce box ... squeeze to 60
@@ -144,6 +144,6 @@ class Qix(app.App):
 __app_export__ = Qix
 
 # ------------------------------ try this --------------------------------------
-# - drag / double-tap TRAIL to 80 and SPEED_MAX to 300.0 -- long ribbons whip around the box
+# - drag or tap TRAIL to 80 and SPEED_MAX to 300.0 -- long ribbons whip around the box
 # - squeeze BOX down to 40: the whole dance folds into a knot mid-screen
 # - in draw(), change  age * age * 0.9  to  age * 0.9  for a gentler, even fade

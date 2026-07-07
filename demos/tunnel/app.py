@@ -22,7 +22,7 @@ from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
 
 # ------------------------------ tweak me -------------------------------------
-# Drag a number to change it (double-tap for a slider on a touchscreen);
+# Drag a number to change it (double-click, or tap on a phone, for a slider);
 # the "MIN<n<MAX" notes set each slider's range.
 RINGS    = 22     # 6<n<40   rings in the stack.. 10 = sparse, 34 = dense
 INNER    = 6.0    # 2<n<24   radius of the smallest ring.. bigger opens the mouth
