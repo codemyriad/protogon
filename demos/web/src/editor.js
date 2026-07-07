@@ -107,6 +107,7 @@ const scrubDragHandler = EditorView.domEventHandlers({
     if (!tok) return false;
 
     event.preventDefault();
+    const pointerId = event.pointerId;
     const startX = event.clientX;
     const original = tok.text;
     const {decimals, step} = stepInfo(original);
@@ -115,10 +116,19 @@ const scrubDragHandler = EditorView.domEventHandlers({
     let currentText = original;
     let moved = false;
 
+    // Capture the pointer on the PERSISTENT content element, not the number
+    // span: each scrub rewrites the number, which replaces the span's DOM node.
+    // On touch the pointer is implicitly captured to that span, so replacing it
+    // drops the capture and the drag stops after one step ("one unit per
+    // swipe"). Capturing on contentDOM survives the re-render.
+    const capTarget = view.contentDOM;
+    try { capTarget.setPointerCapture(pointerId); } catch {}
+
     const teardown = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", teardown);
+      window.removeEventListener("pointercancel", onUp);
+      try { capTarget.releasePointerCapture(pointerId); } catch {}
       view.dom.classList.remove("cm-scrubbing");
     };
 
@@ -130,6 +140,7 @@ const scrubDragHandler = EditorView.domEventHandlers({
       view.state.sliceDoc(from, from + currentText.length) !== currentText;
 
     const onMove = (e) => {
+      if (e.pointerId !== pointerId) return;
       const dx = e.clientX - startX;
       if (!moved && Math.abs(dx) < 3) return;   // click vs drag threshold
       moved = true;
@@ -152,6 +163,7 @@ const scrubDragHandler = EditorView.domEventHandlers({
     };
 
     const onUp = (e) => {
+      if (e.pointerId !== pointerId) return;
       teardown();
       if (!moved) {
         // Plain click: behave like normal cursor placement.
@@ -175,7 +187,7 @@ const scrubDragHandler = EditorView.domEventHandlers({
 
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", teardown);
+    window.addEventListener("pointercancel", onUp);
     return true; // tell CodeMirror the event is handled
   },
 });
@@ -340,8 +352,15 @@ function openPicker(view, anchor, hex, nums) {
     }
     input.remove();
   });
-  // click() must run in the user gesture
-  input.click();
+  // Open the native picker. showPicker() is the API that actually works on
+  // mobile — a programmatic input.click() opens nothing there. Both need the
+  // live user gesture we're inside (this runs synchronously from pointerdown).
+  try {
+    if (typeof input.showPicker === "function") input.showPicker();
+    else input.click();
+  } catch {
+    input.click();
+  }
 }
 
 const swatchPlugin = ViewPlugin.fromClass(class {
