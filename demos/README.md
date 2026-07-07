@@ -1,6 +1,6 @@
 # Tildagon badge demos
 
-Fourteen tiny, high-effect demos for the EMF Tildagon badge's round 240×240
+Fifteen tiny, high-effect demos for the EMF Tildagon badge's round 240×240
 screen — vector primitives, coarse grids and small particle systems rather than
 brute-force per-pixel effects, which is what the badge's MicroPython
 `update(delta)` / `draw(ctx)` model actually rewards. They come straight off the
@@ -10,8 +10,8 @@ Each demo is a **standalone, unmodified badge app** (`demos/<name>/app.py`, a
 `class … (app.App)` with `__app_export__`), named for what it shows:
 `tixy`, `moire`, `qix`, `starfield`, `tunnel`, `kaleidoscope`, `hopalong`,
 `matrixrain`, `plasma`, `ledring`, `pipes`, `cellular`, `ribbons`,
-`metaballs`. Each app's header credits its prior art — most of these effects
-have decades of history.
+`metaballs`, `timescope`. Each app's header credits its prior art — most of
+these effects have decades of history.
 
 ## The demos
 
@@ -42,7 +42,7 @@ colour/timing). Every demo exits with **CANCEL**; ⬤ = also drives the ring LED
 <tr>
 <td align="center"><img src="ribbons/ribbons.gif" width="200"><br><b>13 · <code>ribbons</code></b> — Drift lines<br><sub>braided spline ribbons</sub><br><sub>RIGHT/LEFT ribbon count</sub></td>
 <td align="center"><img src="metaballs/metaballs.gif" width="200"><br><b>14 · <code>metaballs</code></b> — Metaballs (lite)<br><sub>orbiting translucent blobs</sub><br><sub>RIGHT/LEFT blob count</sub><br><sub>after <a href="https://en.wikipedia.org/wiki/Metaballs">metaballs</a></sub></td>
-<td></td>
+<td align="center"><img src="timescope/timescope.gif" width="200"><br><b>15 · <code>timescope</code></b> — Timescope ⬤<br><sub>times-table chords fold into cardioids</sub><br><sub>LEFT/RIGHT table · UP/DOWN speed · CONFIRM pins</sub><br><sub>after <a href="https://en.wikipedia.org/wiki/Cardioid#Cardioid_as_envelope_of_a_pencil_of_lines">multiplication circles</a></sub></td>
 </tr>
 </table>
 

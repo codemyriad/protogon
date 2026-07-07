@@ -41,6 +41,7 @@ SCRIPTS = {
     "cellular": [(40, "CONFIRM"), (90, "RIGHT")],
     "ribbons": [(60, "RIGHT")],
     "metaballs": [(50, "RIGHT")],
+    "timescope": [(60, "RIGHT"), (120, "RIGHT"), (170, "CONFIRM")],
 }
 
 
