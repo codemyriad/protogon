@@ -78,10 +78,13 @@ function placeDefault() {
   const size = discSize();
   const saved = savedPos();
   if (saved) return setPos(saved.x, saved.y);
-  // default: tucked into the bottom-right corner
+  // default: tucked into the bottom-right corner — above the dock, which is a
+  // bottom bar at this breakpoint.
+  const dock = document.querySelector("#dock");
+  const dockH = dock ? dock.getBoundingClientRect().height : 0;
   return setPos(
     window.innerWidth - size.w - EDGE,
-    window.innerHeight - size.h - EDGE,
+    window.innerHeight - size.h - EDGE - dockH,
   );
 }
 

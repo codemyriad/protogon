@@ -90,6 +90,28 @@ cp "$BADGE_SRC/sim/background.png" "$DIST/badge.png"
 cp "$BADGE_SRC/LICENSE" "$DIST/LICENSE-badge-2024-software.txt"
 cp "$HERE/boot.py" "$DIST/boot.py"
 
+# --- 2b. fonts (IBM Plex, vendored so the site stays zero-CDN) ----------------
+# Latin subsets from Google Fonts; gstatic files are content-addressed, so the
+# URLs are stable and the checksums pin them. Sans is the variable font (one
+# file covers weights 100-700); Mono needs one file per weight.
+echo ">> fonts (IBM Plex)"
+mkdir -p "$DIST/fonts"
+while read -r name url sha; do
+  [ -z "$name" ] && continue
+  f="$CACHE/$name"
+  if [ ! -f "$f" ]; then
+    curl -fsSL "$url" -o "$f.tmp"
+    echo "$sha  $f.tmp" | sha256sum -c - >/dev/null
+    mv "$f.tmp" "$f"
+  fi
+  cp "$f" "$DIST/fonts/$name"
+done <<'FONTS'
+plex-sans-var.woff2 https://fonts.gstatic.com/s/ibmplexsans/v23/zYXzKVElMYYaJe8bpLHnCwDKr932-G7dytD-Dmu1syxeKYY.woff2 e2291e842cf5af167122a22881a740c7f2dda7716f1e8cd76680264f4a859470
+plex-mono-400.woff2 https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q1w.woff2 08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7
+plex-mono-500.woff2 https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlBFgg.woff2 01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22
+plex-mono-600.woff2 https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwlBFgg.woff2 0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83
+FONTS
+
 # --- 3. demo sources + manifest -----------------------------------------------
 echo ">> collecting demos"
 rm -rf "$DIST/demos"   # else renamed/removed demos linger from an earlier build

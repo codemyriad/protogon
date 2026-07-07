@@ -12,18 +12,25 @@ swatch for a picker, **tap** a `#:` pick-one choice to swap it live, **tap** a
 range and clamps its drag (with several numbers on a line, `a`/`b`/`c`/… pick
 them by position). Pause badge time and edits re-render the frozen frame.
 
-Every page is one demo: `/#tixy`, `/#ledring`, … The chips at the top switch
-between all fourteen.
+Every page is one demo: `/#tixy`, `/#ledring`, … The **▤ browse flyout** (icon
+dock, far left) lists all fourteen — and your own snippets — as cards, each
+with a **live thumbnail**: a frame captured from the emulator a few seconds
+after that script starts (cached in `localStorage`, regenerated when the code
+changes; a background worker quietly fills in the ones you haven't run yet).
+Cards carry quick actions — ⚡ flash, ⧉ duplicate, ✕ delete — and a search box
+filters both sections. The `?` button explains the interaction model in an
+info window.
 
 ## Keep your own snippets
 
 The demos are read-only starting points. The moment you edit one, the toolbar
 lets you **save** it as your own snippet (they live in `localStorage`); from
-there **fork** variants, **rename**, **revert**. Unsaved edits autosave as a
-draft keyed to what you were editing, so closing the tab never loses work.
-`+ new` starts from a small template. The `⋯` menu **downloads a `.py`**,
-copies a **share link** (the whole program deflate-packed into the URL — no
-server), and **backs up / imports** all your snippets as JSON.
+there **duplicate** variants, **rename**, **revert**. Unsaved edits autosave
+as a draft keyed to what you were editing, so closing the tab never loses
+work. `＋ new` starts from a small template. The `⋯` menu **downloads a
+`.py`**, copies a **share link** (the whole program deflate-packed into the
+URL — no server), duplicates or deletes the open snippet, and **backs up /
+imports** all your snippets as JSON.
 
 The byte counter next to the name shows the size after comments are stripped,
 against the ~6.5 KB a hexpansion EEPROM holds — it turns amber, then red, as
@@ -100,10 +107,11 @@ and takes effect immediately.
 | `boot.py` | Pyodide-side bootstrap: sys.path, crash hook, scheduler boot, hot-swap |
 | `overlay/` | the three browser fakes + pygame stub (see above) |
 | `src/sim-worker.js` | the worker: WASI shim, Pyodide boot, `chost` bridge |
-| `src/app.js` | the page: badge chrome, gallery, transport, watchdog |
+| `src/app.js` | the page: dock + flyout + info chrome, badge, transport, watchdog |
 | `src/editor.js` | CodeMirror 6: scrub, colour swatch, pick-one, bool toggle, error pinning |
 | `src/store.js` | snippet + draft storage, share-link encode, JSON export/import |
-| `src/library.js` | the gallery + snippet toolbar, hash routing, size gauge |
+| `src/library.js` | the gallery cards + snippet toolbar, hash routing, size gauge |
+| `src/previews.js` | captured-frame thumbnails: cache, dock tile, background pre-gen |
 | `src/flash.js` | the `⚡ flash…` dialog: connect → scan → pick → flash |
 | `src/serial.js` | WebSerial MicroPython raw-REPL client (mpremote, in the page) |
 | `src/badge-scripts.js` | the Python run on the badge to scan + flash EEPROMs |

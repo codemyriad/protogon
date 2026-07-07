@@ -11,86 +11,133 @@
 <body>
 
 <header>
-  <div class="brand">⬡ <strong>Tildagon</strong> live playground</div>
-  <div id="chips-scroll">
-    <nav id="demo-chips" aria-label="demos"></nav>
-    <nav id="snippet-chips" aria-label="my snippets"></nav>
-  </div>
+  <div class="brand"><span class="brand-hex">⬡</span> <strong>Tildagon</strong> <span class="brand-sub">live playground</span></div>
+  <span class="spacer"></span>
+  <button id="btn-info-top" class="info-btn" title="How the live playground works">?</button>
+  <button id="btn-new-top" title="start a fresh snippet">＋ new</button>
 </header>
 
 <main>
-  <section id="editor-pane">
-    <div id="toolbar">
-      <input id="snip-name" spellcheck="false" autocomplete="off" aria-label="snippet name">
-      <span id="dirty-dot" title="unsaved edits (autosaved as a draft)" hidden>●</span>
-      <button id="btn-revert" class="tbtn" title="discard edits, back to the saved version" hidden>revert</button>
-      <button id="btn-save" class="tbtn">save</button>
-      <button id="btn-fork" class="tbtn" title="save a copy as a new snippet" hidden>fork</button>
-      <button id="btn-delete" class="tbtn" title="delete this snippet" hidden>delete</button>
-      <span id="toolbar-msg" role="status"></span>
-      <span id="size-badge"></span>
-      <button id="btn-flash" class="tbtn" title="write this program to a hexpansion EEPROM over USB">⚡ flash…</button>
-      <details id="lib-menu">
-        <summary title="more">⋯</summary>
-        <div class="menu-items">
-          <button id="menu-download">download .py</button>
-          <button id="menu-share">copy share link</button>
-          <hr>
-          <button id="menu-export">back up all snippets</button>
-          <button id="menu-import">import snippets…</button>
+  <nav id="dock" aria-label="playground">
+    <button id="btn-browse" title="browse demos and your snippets" aria-expanded="false">▤</button>
+    <div class="dock-rule"></div>
+    <span class="dock-label">now</span>
+    <div id="now-thumb" class="thumb" title="what the badge is running"></div>
+    <span class="spacer"></span>
+    <button id="btn-new-dock" class="dock-new" title="start a fresh snippet">＋</button>
+    <button id="btn-info-dock" class="dock-info" title="How the live playground works">?</button>
+  </nav>
+
+  <div id="stage">
+    <aside id="flyout" hidden>
+      <div class="flyout-head">
+        <span class="flyout-title">Gallery</span>
+        <button id="btn-flyout-close" title="close the gallery">✕</button>
+      </div>
+      <div class="flyout-search">
+        <span class="search-glyph">🔍</span>
+        <input id="gallery-search" type="search" placeholder="Search…" spellcheck="false" autocomplete="off" aria-label="search demos and snippets">
+      </div>
+      <div id="gallery-scroll">
+        <div class="gallery-section" id="demos-head">
+          <span>Demos</span><span class="count" id="demos-count"></span><span class="rule"></span>
         </div>
-      </details>
-    </div>
-    <div id="editor"></div>
-    <div id="editor-hint">
-      Edits go live as you type — nothing to run, nothing to reload.
-      Drag a <span class="scrub-hint">number</span> to change it, or double-click it
-      (tap on a touchscreen) for a slider; tap a colour swatch
-      <span class="swatch-hint"></span> to open a picker. A
-      <code>#&nbsp;0&lt;x&lt;1</code> comment sets a number's slider range.
-      If an edit breaks, the badge keeps running the last working code
-      (<span class="stale-hint">●</span> marks that) and the error is pinned to its line.
-      Edits autosave as drafts; <kbd>Ctrl</kbd>+<kbd>S</kbd> keeps them as a snippet.
-    </div>
-  </section>
+        <div id="demo-cards"></div>
+        <div class="gallery-section" id="mine-head" hidden>
+          <span>Mine</span><span class="count" id="mine-count"></span><span class="rule"></span>
+        </div>
+        <div id="mine-cards"></div>
+        <button id="btn-new-flyout" title="start a fresh snippet">＋ New snippet</button>
+      </div>
+    </aside>
 
-  <aside id="badge-pane">
-    <div id="badge">
-      <canvas id="screen" width="240" height="240"></canvas>
-      <div id="screen-boot" hidden></div>
-      <div id="stale-dot" title="the badge is running older code than shown" hidden>●</div>
-    </div>
+    <section id="editor-pane">
+      <div id="toolbar">
+        <span id="run-dot" title="the badge is running this code"></span>
+        <input id="snip-name" spellcheck="false" autocomplete="off" aria-label="snippet name">
+        <span id="dirty-dot" title="unsaved edits (autosaved as a draft)" hidden>●</span>
+        <button id="btn-revert" class="tbtn tbtn-text" title="discard edits, back to the saved version" hidden>revert</button>
+        <button id="btn-save" class="tbtn">save</button>
+        <span id="toolbar-msg" role="status"></span>
+        <span id="size-badge"></span>
+        <button id="btn-flash" class="tbtn" title="write this program to a hexpansion EEPROM over USB">⚡ flash…</button>
+        <details id="lib-menu">
+          <summary title="more">⋯</summary>
+          <div class="menu-items">
+            <button id="menu-download">download .py</button>
+            <button id="menu-share">copy share link</button>
+            <button id="menu-fork">duplicate as a new snippet</button>
+            <button id="menu-delete" hidden>delete this snippet</button>
+            <hr>
+            <button id="menu-export">back up all snippets</button>
+            <button id="menu-import">import snippets…</button>
+          </div>
+        </details>
+      </div>
+      <div id="editor"></div>
+    </section>
 
-    <div id="transport">
-      <button id="btn-pause" title="pause badge time">⏸</button>
-      <button id="btn-step" title="advance one frame (50 ms)" disabled>⏭</button>
-      <button id="btn-reset" title="restart the app (fresh state)">↺</button>
-      <label id="speed-wrap">
-        <input id="speed" type="range" min="-1" max="0.602" step="0.05" value="0">
+    <aside id="badge-pane">
+      <div id="badge-stage">
+        <div id="badge">
+          <canvas id="screen" width="240" height="240"></canvas>
+          <div id="screen-boot" hidden></div>
+          <div id="stale-dot" title="the badge is running older code than shown" hidden>●</div>
+        </div>
+      </div>
+
+      <div id="badge-hint">
+        arrows / enter / esc press the badge buttons · point at the badge to tilt it
+      </div>
+
+      <div id="transport">
+        <button id="btn-pause" title="pause badge time">❚❚</button>
+        <button id="btn-step" title="advance one frame (50 ms)" disabled>⏭</button>
+        <button id="btn-reset" title="restart the app (fresh state)">↺</button>
+        <label id="speed-wrap">
+          <input id="speed" type="range" min="-1" max="0.602" step="0.05" value="0">
+        </label>
         <span id="speed-label">1.0×</span>
-      </label>
-      <span class="stat" id="stat-t"></span>
-      <span class="stat" id="stat-fps"></span>
-    </div>
+        <span class="stat" id="stat-t"></span>
+        <span class="stat" id="stat-fps"></span>
+      </div>
 
-    <div id="badge-hint">
-      arrows / enter / esc press the badge buttons · point at the badge to tilt it
-    </div>
-
-    <details id="console">
-      <summary>console</summary>
-      <pre id="console-log"></pre>
-    </details>
-  </aside>
+      <details id="console">
+        <summary><span class="console-arrow">▶</span> console</summary>
+        <pre id="console-log"></pre>
+      </details>
+    </aside>
+  </div>
 </main>
 
-<footer>
-  Unmodified <a href="https://github.com/emfcamp/badge-2024-software">EMF Tildagon firmware</a>
-  (scheduler, event bus and ctx renderer) running in your browser ·
-  demos from <a href="https://github.com/codemyriad/protogon">protogon</a> ·
-  <a href="code.md">all the code in one file</a> ·
-  in the spirit of <a href="https://worrydream.com/LearnableProgramming/">Learnable Programming</a>
-</footer>
+<dialog id="info-dialog" aria-labelledby="info-title">
+  <div class="info-head">
+    <span class="brand-hex">⬡</span>
+    <span id="info-title">How the live playground works</span>
+    <button id="btn-info-close" title="close">✕</button>
+  </div>
+  <div class="info-body">
+    <div class="info-row"><span class="info-glyph">⚡</span>
+      <div><b>Edits go live as you type</b> — nothing to run, nothing to reload.</div></div>
+    <div class="info-row"><span class="info-glyph">🔢</span>
+      <div><b>Drag any number</b> to change it (tap it on a touchscreen for a slider).
+        Click a colour swatch <span class="swatch-hint"></span> to open a picker.</div></div>
+    <div class="info-row"><span class="info-glyph info-hash">#</span>
+      <div>A <code>#&nbsp;0&lt;x&lt;1</code> comment sets a number's slider range.</div></div>
+    <div class="info-row"><span class="info-glyph info-dot">●</span>
+      <div>If an edit breaks, the badge keeps running the <b>last working code</b>
+        (● marks that) and the error is pinned to its line.</div></div>
+    <div class="info-row"><span class="info-glyph">💾</span>
+      <div>Edits autosave as drafts; <kbd>Ctrl</kbd>+<kbd>S</kbd> keeps them as a snippet.</div></div>
+  </div>
+  <div class="info-foot">
+    Unmodified <a href="https://github.com/emfcamp/badge-2024-software">EMF Tildagon firmware</a>
+    (scheduler, event bus and ctx renderer) running in your browser ·
+    demos from <a href="https://github.com/codemyriad/protogon">protogon</a> ·
+    <a href="code.md">all the code in one file</a> ·
+    in the spirit of <a href="https://worrydream.com/LearnableProgramming/">Learnable Programming</a>.
+  </div>
+</dialog>
 
 <dialog id="flash-dialog"></dialog>
 

@@ -1,17 +1,17 @@
-// editor.js — live-editor pane: CodeMirror 6 + python + oneDark + lint +
+// editor.js — live-editor pane: CodeMirror 6 + python + a house theme + lint +
 // scrubbable number literals (Bret Victor style drag-to-change).
 //
 // Verified against pinned versions:
 //   codemirror@6.0.2  @codemirror/state@6.7.1  @codemirror/view@6.43.5
 //   @codemirror/language@6.12.4  @codemirror/lint@6.9.7
-//   @codemirror/lang-python@6.2.1  @codemirror/theme-one-dark@6.1.3
+//   @codemirror/lang-python@6.2.1  @lezer/highlight@1.2.3
 
 import {basicSetup} from "codemirror";
 import {EditorView, ViewPlugin, Decoration, WidgetType} from "@codemirror/view";
 import {EditorState, Transaction} from "@codemirror/state";
 import {python} from "@codemirror/lang-python";
-import {oneDark} from "@codemirror/theme-one-dark";
-import {syntaxTree} from "@codemirror/language";
+import {syntaxTree, syntaxHighlighting, HighlightStyle} from "@codemirror/language";
+import {tags as t} from "@lezer/highlight";
 import {setDiagnostics, lintGutter} from "@codemirror/lint";
 
 // ---------------------------------------------------------------------------
@@ -94,7 +94,10 @@ const scrubHighlighter = ViewPlugin.fromClass(class {
 const scrubTheme = EditorView.baseTheme({
   ".cm-scrubbable": {
     cursor: "ew-resize",
-    borderBottom: "1px dotted currentColor",
+    textDecoration: "underline",
+    textDecorationColor: "rgba(247, 140, 108, 0.35)",
+    textDecorationThickness: "1px",
+    textUnderlineOffset: "3px",
     // Kill the mobile double-tap-to-zoom delay so our own double-tap (which
     // opens the slider) fires promptly; normal scrolling is untouched.
     touchAction: "manipulation",
@@ -107,23 +110,23 @@ const scrubTheme = EditorView.baseTheme({
     alignItems: "center",
     gap: "0.6rem",
     padding: "0.5rem 0.7rem",
-    background: "#1b1f23",
-    border: "1px solid #2a3036",
+    background: "#1d1d1d",
+    border: "1px solid rgba(255,255,255,0.12)",
     borderRadius: "8px",
     boxShadow: "0 8px 26px rgba(0,0,0,0.5)",
-    font: "13px system-ui, sans-serif",
-    color: "#d6dbe0",
+    font: '13px "IBM Plex Sans", system-ui, sans-serif',
+    color: "#e8e8e5",
   },
   ".cm-slider-pop input[type=range]": {
     width: "min(60vw, 220px)",
-    accentColor: "#afc944",
+    accentColor: "#aecb3a",
     touchAction: "none",
   },
   ".cm-slider-val": {
     minWidth: "3.2em",
     textAlign: "right",
     fontVariantNumeric: "tabular-nums",
-    color: "#afc944",
+    color: "#aecb3a",
     fontWeight: "600",
   },
 });
@@ -792,15 +795,15 @@ const pickTheme = EditorView.baseTheme({
     marginLeft: "0.3em",
     borderRadius: "999px",
     border: "1px solid rgba(255,255,255,0.18)",
-    color: "#8b96a0",
+    color: "#9a9a95",
     userSelect: "none",
     touchAction: "none",
   },
-  ".cm-pick:hover": { borderColor: "rgba(255,255,255,0.4)", color: "#d6dbe0" },
+  ".cm-pick:hover": { borderColor: "rgba(255,255,255,0.4)", color: "#e8e8e5" },
   ".cm-pick-on": {
     color: "#10130a",
-    background: "#afc944",
-    borderColor: "#afc944",
+    background: "#aecb3a",
+    borderColor: "#aecb3a",
     fontWeight: "600",
   },
 });
@@ -882,7 +885,69 @@ const boolTheme = EditorView.baseTheme({
 export const boolToggles = [boolHighlighter, boolClick, boolTheme];
 
 // ---------------------------------------------------------------------------
-// 2. Editor construction + live-run plumbing
+// 2. Theme — the redesign's code area: #161616, IBM Plex Mono 13.5/1.62,
+// 44px right-aligned gutter, and its syntax palette.
+// ---------------------------------------------------------------------------
+
+const playgroundTheme = EditorView.theme({
+  "&": {
+    backgroundColor: "#161616",
+    color: "#cdd3c2",
+    fontSize: "13.5px",
+  },
+  ".cm-scroller": {
+    fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+    lineHeight: "1.62",
+  },
+  ".cm-content": {caretColor: "#aecb3a", padding: "14px 0"},
+  ".cm-cursor, .cm-dropCursor": {borderLeftColor: "#aecb3a"},
+  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
+    {backgroundColor: "rgba(174, 203, 58, 0.16)"},
+  ".cm-panels": {backgroundColor: "#171717", color: "#e8e8e5"},
+  ".cm-gutters": {
+    backgroundColor: "#161616",
+    color: "#4a4a46",
+    border: "none",
+  },
+  ".cm-lineNumbers .cm-gutterElement": {minWidth: "44px", padding: "0 14px 0 8px"},
+  ".cm-activeLine": {backgroundColor: "rgba(255, 255, 255, 0.03)"},
+  ".cm-activeLineGutter": {backgroundColor: "transparent", color: "#7d7d78"},
+  ".cm-matchingBracket, &.cm-focused .cm-matchingBracket": {
+    backgroundColor: "rgba(174, 203, 58, 0.15)",
+    outline: "none",
+  },
+  ".cm-selectionMatch": {backgroundColor: "rgba(255, 255, 255, 0.08)"},
+  ".cm-foldPlaceholder": {
+    backgroundColor: "#232323",
+    border: "none",
+    color: "#9a9a95",
+  },
+  ".cm-tooltip": {
+    backgroundColor: "#1d1d1d",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    color: "#e8e8e5",
+  },
+}, {dark: true});
+
+const playgroundHighlight = HighlightStyle.define([
+  {tag: t.comment, color: "#6b7458"},
+  {tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword],
+   color: "#c792ea"},
+  // Scrubbable numbers get the "tweak me" underline via .cm-scrubbable, which
+  // knows to skip colour channels — so plain colour here.
+  {tag: t.number, color: "#f78c6c"},
+  {tag: [t.bool, t.null, t.atom], color: "#f78c6c"},
+  {tag: [t.string, t.special(t.string), t.docString], color: "#c3e88d"},
+  {tag: [t.function(t.variableName), t.function(t.propertyName)], color: "#82aaff"},
+  {tag: [t.className, t.definition(t.className)], color: "#ffcb6b"},
+  {tag: t.operator, color: "#89a6c2"},
+  {tag: t.self, color: "#c792ea", fontStyle: "italic"},
+  {tag: [t.variableName, t.propertyName], color: "#cdd3c2"},
+  {tag: t.invalid, color: "#e07a7a"},
+]);
+
+// ---------------------------------------------------------------------------
+// 3. Editor construction + live-run plumbing
 // ---------------------------------------------------------------------------
 
 export function createEditor({parent, doc, onChange, debounceMs = 200}) {
@@ -894,7 +959,8 @@ export function createEditor({parent, doc, onChange, debounceMs = 200}) {
       extensions: [
         basicSetup,
         python(),
-        oneDark,
+        playgroundTheme,
+        syntaxHighlighting(playgroundHighlight),
         lintGutter(),
         scrubbableNumbers,
         colorSwatches,

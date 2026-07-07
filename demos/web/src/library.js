@@ -1,5 +1,5 @@
-// library.js — the gallery and your snippets: chips, the name/save toolbar,
-// hash routing, and the never-lose-work draft flow.
+// library.js — the gallery and your snippets: the browse-flyout cards, the
+// name/save toolbar, hash routing, and the never-lose-work draft flow.
 //
 // What's on screen is always one of:
 //   demo     read-only source shipped with the site (#tixy). Editing forks:
@@ -12,8 +12,13 @@
 // so closing the tab mid-edit loses nothing: coming back to that demo or
 // snippet restores the draft (with a "restored unsaved edits" note and a
 // revert button).
+//
+// The flyout lists every demo and every snippet as a card: captured-frame
+// thumbnail (previews.js), name, "size · date" meta, and flash / duplicate /
+// delete quick actions. A search box filters both sections by name.
 
 import * as store from "./store.js";
+import * as previews from "./previews.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -188,9 +193,27 @@ const utf8len = (s) => new TextEncoder().encode(s).length;
 // the true number on the badge before writing.
 export const EEPROM_BUDGET = 6500;
 
+const slimKb = (src) => `${(utf8len(slimPython(src)) / 1024).toFixed(1)} KB`;
+
+// Card meta dates read like the design: "today", "yesterday", "3d ago",
+// then "May 20" (with the year once it isn't this one).
+function relDate(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const now = new Date();
+  const mid = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((mid(now) - mid(d)) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  const opts = { month: "short", day: "numeric" };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString("en", opts);
+}
+
 // ---------------------------------------------------------------------------
 
-export async function initLibrary({ setCode, getCode, onTitle }) {
+export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlashRequest }) {
   const res = await fetch(`demos/demos.json?b=${BUILD}`);
   if (!res.ok) throw new Error(`${res.status} loading demos.json`);
   const manifest = await res.json();
@@ -202,14 +225,26 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
     manifest,
   };
 
+  // Demo sources, fetched once up front: cards need sizes, duplicate needs
+  // code, switching becomes instant, and the preview pre-generator needs
+  // something to run. ~50 KB total, same-origin, cached.
+  const srcCache = new Map();
+  const prefetchDone = Promise.allSettled(
+    manifest.map((d) =>
+      fetch(`demos/${d.id}.py?b=${BUILD}`)
+        .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`${r.status}`))))
+        .then((text) => srcCache.set(d.id, text))
+    )
+  );
+
   // --- toolbar elements ------------------------------------------------------
   const nameInput = $("#snip-name");
   const saveBtn = $("#btn-save");
-  const forkBtn = $("#btn-fork");
-  const deleteBtn = $("#btn-delete");
   const revertBtn = $("#btn-revert");
   const sizeBadge = $("#size-badge");
   const msgEl = $("#toolbar-msg");
+  const menuFork = $("#menu-fork");
+  const menuDelete = $("#menu-delete");
 
   let msgTimer = null;
   function toast(text) {
@@ -245,8 +280,7 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
         ? "the demo stays as shipped; saving makes your own copy (Ctrl+S)"
         : "keep this as a snippet (Ctrl+S)";
     saveBtn.disabled = isSnippet && !unsaved;
-    forkBtn.hidden = !isSnippet;
-    deleteBtn.hidden = !isSnippet;
+    menuDelete.hidden = !isSnippet;
     updateSize(getCode());
   }
 
@@ -269,54 +303,193 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
       (over ? " TOO BIG to flash — trim it." : "");
   }
 
-  // --- chips -------------------------------------------------------------------
-  function buildDemoChips() {
-    const nav = $("#demo-chips");
-    nav.textContent = "";
+  // --- gallery cards -----------------------------------------------------------
+  let searchQuery = "";
+
+  function makeAction(cls, glyph, title, onClick) {
+    const b = document.createElement("button");
+    b.className = cls;
+    b.textContent = glyph;
+    b.title = title;
+    b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      onClick();
+    });
+    return b;
+  }
+
+  function makeCard({ ref, name, meta, title, deletable }) {
+    const key = refKey(ref);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.key = key;
+    card.dataset.search = `${name} ${title || ""}`.toLowerCase();
+    if (title) card.title = title;
+
+    const thumb = document.createElement("div");
+    thumb.className = "thumb";
+    previews.bindThumb(thumb, key);
+
+    const text = document.createElement("div");
+    text.className = "card-text";
+    const nameEl = document.createElement("div");
+    nameEl.className = "card-name";
+    nameEl.textContent = name;
+    const metaEl = document.createElement("div");
+    metaEl.className = "card-meta";
+    metaEl.textContent = meta;
+    text.append(nameEl, metaEl);
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+    actions.append(
+      makeAction("card-flash", "⚡", `flash “${name}” to a hexpansion`, () =>
+        onFlashRequest(ref)
+      ),
+      makeAction("card-dup", "⧉", `duplicate “${name}” as a new snippet`, () =>
+        duplicateCard(ref)
+      )
+    );
+    if (deletable) {
+      actions.append(
+        makeAction("card-del", "✕", `delete “${name}”`, () => deleteCard(ref))
+      );
+    }
+
+    card.append(thumb, text, actions);
+    // The old chips were <button>s; keep the gallery keyboard-reachable.
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `open ${name}`);
+    const pick = () => {
+      switchTo(ref);
+      onPicked?.();
+    };
+    card.addEventListener("click", pick);
+    card.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      if (ev.target !== card) return; // let the quick-action buttons be buttons
+      ev.preventDefault();
+      pick();
+    });
+    return card;
+  }
+
+  function buildDemoCards() {
+    const box = $("#demo-cards");
+    box.textContent = "";
     for (const demo of manifest) {
-      const chip = document.createElement("button");
-      chip.className = "chip";
-      chip.textContent = demo.title;
-      chip.title = demo.blurb || demo.id;
-      chip.dataset.key = `demo:${demo.id}`;
-      chip.addEventListener("click", () => switchTo({ kind: "demo", id: demo.id }));
-      nav.appendChild(chip);
+      const src = srcCache.get(demo.id);
+      box.appendChild(
+        makeCard({
+          ref: { kind: "demo", id: demo.id },
+          name: demo.title,
+          meta: src ? slimKb(src) : "…",
+          title: demo.blurb || demo.id,
+          deletable: false,
+        })
+      );
     }
+    $("#demos-count").textContent = manifest.length;
+    markActiveCard();
+    applyFilter();
   }
 
-  function buildSnippetChips() {
-    const nav = $("#snippet-chips");
-    nav.textContent = "";
+  function buildMineCards() {
+    const box = $("#mine-cards");
+    box.textContent = "";
     const snippets = store.listSnippets();
-    if (snippets.length) {
-      const label = document.createElement("span");
-      label.className = "chips-label";
-      label.textContent = "mine";
-      nav.appendChild(label);
-    }
     for (const s of snippets) {
-      const chip = document.createElement("button");
-      chip.className = "chip chip-mine";
-      chip.textContent = s.name;
-      chip.title = s.basedOn ? `based on ${s.basedOn}` : "your snippet";
-      chip.dataset.key = `snip:${s.id}`;
-      chip.addEventListener("click", () => switchTo({ kind: "snippet", id: s.id }));
-      nav.appendChild(chip);
+      box.appendChild(
+        makeCard({
+          ref: { kind: "snippet", id: s.id },
+          name: s.name,
+          meta: `${slimKb(s.code)} · ${relDate(s.updatedAt || s.createdAt)}`,
+          title: s.basedOn ? `based on ${s.basedOn}` : "your snippet",
+          deletable: true,
+        })
+      );
     }
-    const plus = document.createElement("button");
-    plus.className = "chip chip-new";
-    plus.textContent = "+ new";
-    plus.title = "start a fresh snippet";
-    plus.dataset.key = "new";
-    plus.addEventListener("click", () => switchTo({ kind: "new" }));
-    nav.appendChild(plus);
+    $("#mine-head").hidden = !snippets.length;
+    $("#mine-count").textContent = snippets.length;
+    markActiveCard();
+    applyFilter();
   }
 
-  function markActiveChip() {
-    const key = refKey(state.ref);
-    for (const chip of document.querySelectorAll(".chip")) {
-      chip.classList.toggle("active", chip.dataset.key === key);
+  function markActiveCard() {
+    const key = state.ref ? refKey(state.ref) : "";
+    for (const card of document.querySelectorAll(".card")) {
+      card.classList.toggle("active", card.dataset.key === key);
     }
+  }
+
+  function applyFilter() {
+    const q = searchQuery.trim().toLowerCase();
+    let demosShown = 0;
+    let mineShown = 0;
+    for (const card of document.querySelectorAll("#demo-cards .card")) {
+      const hit = !q || card.dataset.search.includes(q);
+      card.hidden = !hit;
+      if (hit) demosShown++;
+    }
+    for (const card of document.querySelectorAll("#mine-cards .card")) {
+      const hit = !q || card.dataset.search.includes(q);
+      card.hidden = !hit;
+      if (hit) mineShown++;
+    }
+    $("#demos-head").hidden = Boolean(q) && !demosShown;
+    $("#mine-head").hidden = (Boolean(q) && !mineShown) || !store.listSnippets().length;
+  }
+
+  $("#gallery-search").addEventListener("input", (ev) => {
+    searchQuery = ev.target.value;
+    applyFilter();
+  });
+
+  // --- card quick actions ---------------------------------------------------------
+  function baselineOf(ref) {
+    if (ref.kind === "demo") return srcCache.get(ref.id) ?? null;
+    if (ref.kind === "snippet") return store.getSnippet(ref.id)?.code ?? null;
+    return null;
+  }
+
+  async function duplicateCard(ref) {
+    let code = baselineOf(ref);
+    if (code == null && ref.kind === "demo") {
+      // Prefetch missed (flaky network): fetch on demand instead of a dead end.
+      try {
+        code = await resolveBaseline(ref); // populates srcCache
+        buildDemoCards(); // un-stick the "…" meta
+      } catch {
+        return toast("could not load that demo — check the connection");
+      }
+    }
+    if (code == null) return toast("could not load that source");
+    const isDemo = ref.kind === "demo";
+    const baseName = isDemo
+      ? manifest.find((d) => d.id === ref.id)?.title || ref.id
+      : store.getSnippet(ref.id)?.name || "snippet";
+    const snip = store.saveSnippet({
+      name: store.uniqueName(`${baseName} copy`),
+      code,
+      basedOn: isDemo ? ref.id : store.getSnippet(ref.id)?.basedOn || null,
+    });
+    previews.copyPreview(refKey(ref), `snip:${snip.id}`);
+    buildMineCards();
+    switchTo({ kind: "snippet", id: snip.id });
+    toast(`copied to “${snip.name}” — it's yours now`);
+  }
+
+  function deleteCard(ref) {
+    if (ref.kind !== "snippet") return;
+    if (state.ref?.kind === "snippet" && state.ref.id === ref.id) return remove();
+    const snip = store.getSnippet(ref.id);
+    if (!confirm(`Delete “${snip?.name}”? There is no undo.`)) return;
+    store.deleteSnippet(ref.id);
+    store.clearDraft(refKey(ref));
+    previews.dropPreview(refKey(ref));
+    buildMineCards();
+    toast("deleted");
   }
 
   // --- switching --------------------------------------------------------------
@@ -325,9 +498,12 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
   async function resolveBaseline(ref) {
     switch (ref.kind) {
       case "demo": {
+        if (srcCache.has(ref.id)) return srcCache.get(ref.id);
         const r = await fetch(`demos/${ref.id}.py?b=${BUILD}`);
         if (!r.ok) throw new Error(`${r.status} loading demo ${ref.id}`);
-        return await r.text();
+        const text = await r.text();
+        srcCache.set(ref.id, text);
+        return text;
       }
       case "snippet": {
         const snip = store.getSnippet(ref.id);
@@ -381,7 +557,8 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
     }
 
     setCode(restored ? draft : baseline);
-    markActiveChip();
+    previews.setNowFromKey(refKey(ref));
+    markActiveCard();
     updateToolbar();
     onTitle(currentName());
     if (restored) toast("restored unsaved edits — revert to discard");
@@ -396,8 +573,7 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
       state.baseline = code;
       state.dirty = false;
       store.clearDraft(refKey(ref));
-      buildSnippetChips();
-      markActiveChip();
+      buildMineCards();
       updateToolbar();
       onTitle(snip.name);
       toast("saved");
@@ -414,6 +590,7 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
       code,
       basedOn: ref.kind === "demo" ? ref.id : null,
     });
+    previews.copyPreview(refKey(ref), `snip:${snip.id}`);
     store.clearDraft(refKey(ref));
     state.ref = { kind: "snippet", id: snip.id };
     state.baseline = code;
@@ -421,8 +598,7 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
     nameInput.value = snip.name;
     suppressHash = refHash(state.ref);
     location.hash = refHash(state.ref);
-    buildSnippetChips();
-    markActiveChip();
+    buildMineCards();
     updateToolbar();
     onTitle(snip.name);
     toast(`saved as “${snip.name}” — it's yours now`);
@@ -430,21 +606,22 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
 
   function fork() {
     const code = getCode();
+    const fromKey = refKey(state.ref);
     const snip = store.saveSnippet({
       name: store.uniqueName(`${currentName()} copy`),
       code,
       basedOn: state.ref.kind === "snippet"
         ? store.getSnippet(state.ref.id)?.basedOn || null
-        : null,
+        : state.ref.kind === "demo" ? state.ref.id : null,
     });
+    previews.copyPreview(fromKey, `snip:${snip.id}`);
     state.ref = { kind: "snippet", id: snip.id };
     state.baseline = code;
     state.dirty = false;
     nameInput.value = snip.name;
     suppressHash = refHash(state.ref);
     location.hash = refHash(state.ref);
-    buildSnippetChips();
-    markActiveChip();
+    buildMineCards();
     updateToolbar();
     onTitle(snip.name);
     toast(`copied to “${snip.name}”`);
@@ -456,7 +633,8 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
     if (!confirm(`Delete “${snip?.name}”? There is no undo.`)) return;
     store.deleteSnippet(state.ref.id);
     store.clearDraft(refKey(state.ref));
-    buildSnippetChips();
+    previews.dropPreview(refKey(state.ref));
+    buildMineCards();
     const back = snip?.basedOn && manifest.some((d) => d.id === snip.basedOn)
       ? snip.basedOn
       : manifest[0].id;
@@ -478,6 +656,15 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
   const closeMenu = () => menu.removeAttribute("open");
   document.addEventListener("pointerdown", (ev) => {
     if (menu.hasAttribute("open") && !menu.contains(ev.target)) closeMenu();
+  });
+  // The dropdown is position:fixed (the toolbar is an overflow-x scroll
+  // container that would clip an absolute child) — anchor it on open.
+  menu.addEventListener("toggle", () => {
+    if (!menu.open) return;
+    const r = menu.querySelector("summary").getBoundingClientRect();
+    const items = menu.querySelector(".menu-items");
+    items.style.top = `${r.bottom + 4}px`;
+    items.style.right = `${Math.max(8, window.innerWidth - r.right)}px`;
   });
 
   function slug(name) {
@@ -512,6 +699,16 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
     }
   });
 
+  menuFork.addEventListener("click", () => {
+    closeMenu();
+    fork();
+  });
+
+  menuDelete.addEventListener("click", () => {
+    closeMenu();
+    remove();
+  });
+
   $("#menu-export").addEventListener("click", () => {
     closeMenu();
     const n = store.listSnippets().length;
@@ -534,8 +731,7 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
       if (!file) return;
       try {
         const { added, skipped } = store.importAll(await file.text());
-        buildSnippetChips();
-        markActiveChip();
+        buildMineCards();
         toast(`imported ${added} snippet${added === 1 ? "" : "s"}` +
               (skipped ? ` (${skipped} already here)` : ""));
       } catch (err) {
@@ -547,8 +743,6 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
 
   // --- wiring ------------------------------------------------------------------
   saveBtn.addEventListener("click", save);
-  forkBtn.addEventListener("click", fork);
-  deleteBtn.addEventListener("click", remove);
   revertBtn.addEventListener("click", revert);
 
   nameInput.addEventListener("input", () => updateToolbar());
@@ -582,11 +776,14 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
     toast("heads-up: localStorage is unavailable — snippets won't survive this tab");
   }
 
-  buildDemoChips();
-  buildSnippetChips();
+  buildDemoCards();
+  buildMineCards();
   await switchTo(
     parseHash(location.hash, manifest) || { kind: "demo", id: manifest[0].id }
   );
+  // Demo sizes (and duplicate/pregen sources) arrive shortly after first
+  // paint; rebuild the demo cards once they're in.
+  prefetchDone.then(() => buildDemoCards());
 
   return {
     // editor change hook: dirty tracking + draft autosave + size badge
@@ -603,8 +800,26 @@ export async function initLibrary({ setCode, getCode, onTitle }) {
       else store.clearDraft(refKey(state.ref));
     },
     currentName,
+    currentKey: () => (state.ref ? refKey(state.ref) : null),
     switchTo,
     save,
+    // What the preview pre-generator should run: every demo and snippet, as
+    // the editor would open it (draft over baseline), keyed + content-hashed.
+    async getPregenItems() {
+      await prefetchDone;
+      const items = [];
+      for (const d of manifest) {
+        const key = `demo:${d.id}`;
+        const src = store.getDraft(key) ?? srcCache.get(d.id);
+        if (src) items.push({ key, src, hash: previews.hashSrc(src) });
+      }
+      for (const s of store.listSnippets()) {
+        const key = `snip:${s.id}`;
+        const src = store.getDraft(key) ?? s.code;
+        items.push({ key, src, hash: previews.hashSrc(src) });
+      }
+      return items;
+    },
     state, // for QA
   };
 }

@@ -338,6 +338,17 @@ function handle(msg) {
     case "step":
       vclock.vms += msg.ms || 50; // one badge frame
       break;
+    case "capture":
+      // Thumbnail for the gallery: a copy of the most recent blitted frame.
+      // createImageBitmap (not transferToImageBitmap) so the visible canvas
+      // keeps its frame; the bitmap transfers back zero-copy.
+      if (!screenCtx) break;
+      createImageBitmap(screenCtx.canvas)
+        .then((bitmap) =>
+          self.postMessage({ type: "captured", bitmap, id: msg.id ?? null }, [bitmap])
+        )
+        .catch(() => {});
+      break;
     default:
       break;
   }

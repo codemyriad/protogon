@@ -15,8 +15,10 @@ import {
 import { initLibrary } from "./library.js";
 import { initFlash } from "./flash.js";
 import { initFloat } from "./float.js";
+import * as previews from "./previews.js";
 
 const $ = (sel) => document.querySelector(sel);
+const narrow = () => matchMedia("(max-width: 900px)").matches;
 
 // --- badge geometry (fractions of the 733x733 sim badge photo) -------------
 const LED_POS = [
@@ -52,6 +54,9 @@ let lastAutoRevive = 0;
 let currentSpeed = 1;
 let pongPending = false;
 let lastPingAt = 0;
+let isStale = false;
+let captureTimer = null;
+let pregenStarted = false;
 
 // ---------------------------------------------------------------------------
 // Badge chrome
@@ -122,8 +127,19 @@ function bindKeyboard() {
   const shouldIgnore = (ev) =>
     $("#editor").contains(ev.target) ||
     (ev.target instanceof Element &&
-      ev.target.closest("button, input, select, textarea, a, summary"));
+      ev.target.closest("button, input, select, textarea, a, summary, dialog"));
   window.addEventListener("keydown", (ev) => {
+    // Esc dismisses the browse flyout (like every other overlay here) instead
+    // of reaching the badge as its CANCEL button and minimising the app.
+    // Dialogs keep their native Esc handling.
+    if (
+      ev.key === "Escape" &&
+      !$("#flyout").hidden &&
+      !(ev.target instanceof Element && ev.target.closest("dialog"))
+    ) {
+      setFlyout(false);
+      return;
+    }
     if (shouldIgnore(ev) || ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const i = keyIndex.get(ev.key);
     if (i === undefined) return;
@@ -187,6 +203,7 @@ function spawnWorker(src) {
   }
   swapSrcById.clear();
   reviveIds.clear();
+  clearTimeout(captureTimer); // don't snapshot a badge that is mid-reboot
 
   // transferControlToOffscreen is once-per-element: rebuild the canvas node.
   const old = $("#screen");
@@ -218,6 +235,15 @@ function onWorkerMessage(msg) {
       bootedOnce = true;
       lastPong = performance.now();
       bootStatus("");
+      // Once the visible badge is comfortably up, fill in gallery thumbnails
+      // that have never been captured (throwaway background worker).
+      if (!pregenStarted) {
+        pregenStarted = true;
+        setTimeout(async () => {
+          if (!library) return;
+          previews.startPregen(await library.getPregenItems());
+        }, 8000);
+      }
       break;
     case "swapped": {
       const sent = swapSrcById.get(msg.id);
@@ -231,11 +257,27 @@ function onWorkerMessage(msg) {
         if (!wasRevive && sent === editor.state.doc.toString()) {
           clearRuntimeError(editor);
           setStale(false);
+          // Thumbnail: snapshot the screen once the app has ~3 s of life in
+          // it. The key/hash ride along and come back with the frame, so a
+          // capture that outlives a script switch can't be filed under the
+          // wrong card (the worker answers in message order; by receipt time
+          // a mismatched tag or a stale badge means "drop it").
+          scheduleCapture(sent);
         } else if (!wasRevive) {
           setStale(true);
         }
       } else if (!msg.ok) {
         setStale(true);
+      }
+      break;
+    }
+    case "captured": {
+      if (!msg.bitmap) break;
+      const url = previews.encodeBitmap(msg.bitmap);
+      previews.setNow(url); // the dock tile mirrors whatever is running
+      const tag = msg.id;
+      if (tag?.key && !isStale && library && tag.key === library.currentKey()) {
+        previews.record(tag.key, tag.hash, url);
       }
       break;
     }
@@ -300,8 +342,21 @@ function startWatchdog() {
   }, 1000);
 }
 
+function scheduleCapture(src) {
+  clearTimeout(captureTimer);
+  const tag = { key: library?.currentKey(), hash: previews.hashSrc(src) };
+  if (!tag.key) return;
+  captureTimer = setTimeout(() => send({ type: "capture", id: tag }), 3000);
+}
+
 function setStale(stale) {
+  isStale = stale;
   $("#stale-dot").hidden = !stale;
+  const dot = $("#run-dot");
+  dot.classList.toggle("stale", stale);
+  dot.title = stale
+    ? "the badge is running the last working code, not this edit"
+    : "the badge is running this code";
 }
 
 // ---------------------------------------------------------------------------
@@ -327,7 +382,7 @@ function bindTransport() {
   const pauseBtn = $("#btn-pause");
   pauseBtn.addEventListener("click", () => {
     paused = !paused;
-    pauseBtn.textContent = paused ? "▶" : "⏸";
+    pauseBtn.textContent = paused ? "▶" : "❚❚";
     pauseBtn.title = paused ? "resume badge time" : "pause badge time";
     send({ type: "clock", paused });
     $("#btn-step").disabled = !paused;
@@ -337,12 +392,70 @@ function bindTransport() {
     send({ type: "reset" });
   });
   const speed = $("#speed");
+  // The design's slider has a lime fill up to the knob; a plain range input
+  // only tints the thumb, so paint the track with a two-stop gradient.
+  const paintSpeed = () => {
+    const min = parseFloat(speed.min);
+    const max = parseFloat(speed.max);
+    const pct = ((parseFloat(speed.value) - min) / (max - min)) * 100;
+    speed.style.background =
+      `linear-gradient(to right, var(--accent) 0 ${pct}%, #2a2a2a ${pct}% 100%)`;
+  };
+  paintSpeed();
   speed.addEventListener("input", () => {
+    paintSpeed();
     const s = Math.pow(10, parseFloat(speed.value));
     currentSpeed = s;
     $("#speed-label").textContent = `${s.toFixed(s < 1 ? 2 : 1)}×`;
     send({ type: "clock", speed: s });
   });
+}
+
+// ---------------------------------------------------------------------------
+// Chrome: browse flyout, info window, "new" buttons
+// ---------------------------------------------------------------------------
+const FLYOUT_KEY = "tlp.ui.flyout.v1";
+
+function setFlyout(open) {
+  $("#flyout").hidden = !open;
+  document.body.classList.toggle("flyout-open", open);
+  $("#btn-browse").setAttribute("aria-expanded", String(open));
+  try {
+    localStorage.setItem(FLYOUT_KEY, open ? "1" : "0");
+  } catch {}
+}
+
+function flyoutIsOpen() {
+  return !$("#flyout").hidden;
+}
+
+function bindChrome({ newSnippet }) {
+  // Browse flyout: an overlay over the editor. Defaults open on desktop so
+  // the gallery is discoverable, closed on phones where it covers everything.
+  let open;
+  try {
+    const saved = localStorage.getItem(FLYOUT_KEY);
+    open = saved === null ? !narrow() : saved === "1";
+  } catch {
+    open = !narrow();
+  }
+  setFlyout(open);
+  $("#btn-browse").addEventListener("click", () => setFlyout(!flyoutIsOpen()));
+  $("#btn-flyout-close").addEventListener("click", () => setFlyout(false));
+
+  // Info window: both ? buttons open it; ✕, backdrop click, or Esc close it.
+  const info = $("#info-dialog");
+  const openInfo = () => info.showModal();
+  $("#btn-info-top").addEventListener("click", openInfo);
+  $("#btn-info-dock").addEventListener("click", openInfo);
+  $("#btn-info-close").addEventListener("click", () => info.close());
+  info.addEventListener("click", (ev) => {
+    if (ev.target === info) info.close(); // backdrop
+  });
+
+  for (const id of ["#btn-new-top", "#btn-new-dock", "#btn-new-flyout"]) {
+    $(id).addEventListener("click", newSnippet);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -353,6 +466,8 @@ async function main() {
   bindKeyboard();
   bindTransport();
   const float = initFloat();
+  previews.registerNow($("#now-thumb"));
+  bindChrome({ newSnippet: () => library?.switchTo({ kind: "new" }) });
 
   editor = createEditor({
     parent: $("#editor"),
@@ -367,19 +482,49 @@ async function main() {
   spawnWorker();
   startWatchdog();
 
-  // The gallery + snippet library owns the chips, the toolbar and the hash.
+  // Assigned after initLibrary returns; the flyout's ⚡ quick actions can fire
+  // before then and guard on it.
+  let flash = null;
+
+  // The gallery + snippet library owns the flyout cards, the toolbar and the
+  // hash.
   library = await initLibrary({
     setCode: (src) => replaceDoc(editor, src),
     getCode: () => editor.state.doc.toString(),
     onTitle: (name) => {
       document.title = `${name} · Tildagon live playground`;
     },
+    // Picking a card on a phone: the full-screen flyout would hide the result.
+    onPicked: () => {
+      if (narrow()) setFlyout(false);
+    },
+    onFlashRequest: async (ref) => {
+      // Cards are clickable while the first demo is still loading; until
+      // library/flash exist there is nothing to flash yet.
+      if (!library || !flash) return;
+      await library.switchTo(ref);
+      if (narrow()) setFlyout(false);
+      flash.open();
+    },
   });
 
-  const flash = initFlash({
+  flash = initFlash({
     getCode: () => editor.state.doc.toString(),
     getName: () => library.currentName(),
   });
+
+  // Long-running scripts keep evolving visually: refresh the running
+  // script's thumbnail (and the dock tile) every so often.
+  setInterval(() => {
+    if (!workerReady || paused || isStale || !library) return;
+    if (document.visibilityState !== "visible") return;
+    const key = library.currentKey();
+    if (!key) return;
+    send({
+      type: "capture",
+      id: { key, hash: previews.hashSrc(editor.state.doc.toString()) },
+    });
+  }, 10000);
 
   // Small hook for headless QA (and console tinkerers).
   window.playground = {
@@ -388,10 +533,12 @@ async function main() {
     library,
     flash,
     float,
+    previews,
     setCode: (src) => replaceDoc(editor, src),
     getCode: () => editor.state.doc.toString(),
     isReady: () => workerReady,
     lastGood: () => lastGoodSrc,
+    setFlyout,
   };
 }
 
