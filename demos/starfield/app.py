@@ -27,12 +27,14 @@ from tildagonos import tildagonos
 
 # ------------------------------ tweak me -------------------------------------
 # In the playground every number is draggable -- grab one and watch the badge.
-STARS     = 70      # how many stars ...... try 150 (a blizzard) or 20 (calm)
-FOV       = 90.0    # camera zoom ......... 40.0 snow globe, 160.0 warp tunnel
-TILT_GAIN = 0.6     # how hard a lean shoves the field .... try 2.0 (twitchy)
-SMOOTH    = 0.15    # steering follow-speed. 0.02 oil tanker, 0.5 instant
-GROW      = 3.0     # how fat a star gets as it flies past ....... try 8.0
-BLUE_TINT = 0.15    # icy blue on bright stars. 0.0 pure white, 0.6 deep space
+STARS     = 70              # how many stars ...... try 150 (a blizzard) or 20 (calm)
+FOV       = 90.0            # camera zoom ......... 40.0 snow globe, 160.0 warp tunnel
+TILT_GAIN = 0.6             # how hard a lean shoves the field .... try 2.0 (twitchy)
+SMOOTH    = 0.15            # steering follow-speed. 0.02 oil tanker, 0.5 instant
+GROW      = 3.0             # how fat a star gets as it flies past ....... try 8.0
+BLUE_TINT = 0.15            # icy blue on bright stars. 0.0 pure white, 0.6 deep space
+WARP      = 0.65            # starting warp speed .. 2.0 = hyperspace
+STAR      = (1.0, 1.0, 1.0) # star tint (r,g,b) .. try (1.0, 0.9, 0.7) for warm
 
 
 def read_tilt():
@@ -55,7 +57,7 @@ class Starfield(app.App):
         super().__init__()
         self.button_states = Buttons(self)
         self.fg = False        # have we taken the screen yet?
-        self.warp = 0.65       # fly speed -- UP/DOWN change it while running
+        self.warp = WARP       # fly speed -- UP/DOWN change it while running
         self.tiltx = 0.0       # smoothed lean, -1..1
         self.tilty = 0.0
         # scatter the stars, each already partway along its journey
@@ -131,7 +133,8 @@ class Starfield(app.App):
             bright = 1.0 - z            # nearer = brighter
             if bright < 0.05:           # newborn stars are too dim to see
                 continue
-            ctx.rgba(bright, bright, min(1.0, bright + BLUE_TINT), 1.0)
+            ctx.rgba(bright * STAR[0], bright * STAR[1],
+                     min(1.0, bright + BLUE_TINT) * STAR[2], 1.0)
             ctx.arc(px, py, 0.5 + bright * GROW, 0, 6.2832, True).fill()
         ctx.restore()
 

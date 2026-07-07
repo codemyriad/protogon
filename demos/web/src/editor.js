@@ -367,6 +367,238 @@ const swatchTheme = EditorView.baseTheme({
 export const colorSwatches = [swatchPlugin, swatchTheme];
 
 // ---------------------------------------------------------------------------
+// 1c. Pick-one groups — "comment/uncomment to switch", made clickable
+//
+// A run of adjacent lines at the same indent, each tagged with a `#: label`
+// marker, is a radio group: exactly the uncommented one runs, the rest are
+// commented out. Clicking a choice comments the active line and uncomments
+// the clicked one — one transaction, so the badge swaps to it live. It stays
+// plain Python: `#: label` is just a comment, and you can still edit any line
+// or comment them yourself.
+//
+//     return math.sin(t + x)          #: waves      <- runs
+//     # return math.sin(t * 2 + i)    #: spin       <- click to run
+// ---------------------------------------------------------------------------
+
+// Parse one line. Returns {indent, commented, marker} where marker is the
+// index of "#:" in the line, or null if it isn't a choice line.
+function parseChoiceLine(text) {
+  const marker = text.indexOf("#:");
+  if (marker < 0) return null;
+  const head = text.slice(0, marker);
+  // head is: <indent>[# ]<code with at least one non-space char><spaces>
+  const m = /^(\s*)(#\s?)?(\S.*\S|\S)\s*$/.exec(head);
+  if (!m) return null;
+  const label = text.slice(marker + 2).trim();
+  if (!label) return null;
+  return { indent: m[1], commented: !!m[2], marker, label };
+}
+
+// The line numbers (1-based) of the choice group containing `lineNo`, or null
+// if that line isn't part of a group of 2+ at a consistent indent.
+function choiceGroupAt(state, lineNo) {
+  const here = parseChoiceLine(state.doc.line(lineNo).text);
+  if (!here) return null;
+  const lines = [lineNo];
+  for (let n = lineNo - 1; n >= 1; n--) {
+    const p = parseChoiceLine(state.doc.line(n).text);
+    if (!p || p.indent !== here.indent) break;
+    lines.unshift(n);
+  }
+  for (let n = lineNo + 1; n <= state.doc.lines; n++) {
+    const p = parseChoiceLine(state.doc.line(n).text);
+    if (!p || p.indent !== here.indent) break;
+    lines.push(n);
+  }
+  return lines.length >= 2 ? lines : null;
+}
+
+class PickWidget extends WidgetType {
+  constructor(active, label, lineNo) {
+    super();
+    this.active = active;
+    this.label = label;
+    this.lineNo = lineNo;
+  }
+  eq(o) {
+    return o.active === this.active && o.label === this.label && o.lineNo === this.lineNo;
+  }
+  toDOM(view) {
+    const el = document.createElement("span");
+    el.className = "cm-pick" + (this.active ? " cm-pick-on" : "");
+    el.textContent = (this.active ? "◉ " : "○ ") + this.label;
+    el.title = this.active ? "running — click another to switch" : `click to run: ${this.label}`;
+    el.addEventListener("mousedown", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      pickChoice(view, this.lineNo);
+    });
+    return el;
+  }
+  ignoreEvent() {
+    return true;
+  }
+}
+
+// Activate the choice on `lineNo`: uncomment it, comment every other active
+// line in its group. One transaction => the editor's change listener fires
+// once and the badge swaps live.
+function pickChoice(view, lineNo) {
+  const group = choiceGroupAt(view.state, lineNo);
+  if (!group) return;
+  const changes = [];
+  for (const n of group) {
+    const line = view.state.doc.line(n);
+    const p = parseChoiceLine(line.text);
+    if (!p) continue;
+    const shouldComment = n !== lineNo;
+    if (shouldComment && !p.commented) {
+      const at = line.from + p.indent.length;
+      changes.push({ from: at, to: at, insert: "# " });
+    } else if (!shouldComment && p.commented) {
+      const at = line.from + p.indent.length;
+      const rm = /^#\s?/.exec(line.text.slice(p.indent.length))[0].length;
+      changes.push({ from: at, to: at + rm, insert: "" });
+    }
+  }
+  if (changes.length) view.dispatch({ changes, userEvent: "input.pick" });
+}
+
+const pickPlugin = ViewPlugin.fromClass(
+  class {
+    constructor(view) {
+      this.decorations = this.compute(view);
+    }
+    update(u) {
+      if (u.docChanged || u.viewportChanged) this.decorations = this.compute(u.view);
+    }
+    compute(view) {
+      const { state } = view;
+      const marks = [];
+      const seen = new Set();
+      for (const { from, to } of view.visibleRanges) {
+        let lineNo = state.doc.lineAt(from).number;
+        const lastLine = state.doc.lineAt(to).number;
+        for (; lineNo <= lastLine; lineNo++) {
+          if (seen.has(lineNo)) continue;
+          const group = choiceGroupAt(state, lineNo);
+          if (!group) continue;
+          for (const n of group) {
+            seen.add(n);
+            const line = state.doc.line(n);
+            const p = parseChoiceLine(line.text);
+            const start = line.from + p.marker;
+            marks.push(
+              Decoration.replace({
+                widget: new PickWidget(!p.commented, p.label, n),
+              }).range(start, line.to)
+            );
+          }
+        }
+      }
+      marks.sort((a, b) => a.from - b.from);
+      return Decoration.set(marks);
+    }
+  },
+  { decorations: (v) => v.decorations }
+);
+
+const pickTheme = EditorView.baseTheme({
+  ".cm-pick": {
+    cursor: "pointer",
+    fontSize: "0.85em",
+    padding: "0 0.4em",
+    marginLeft: "0.3em",
+    borderRadius: "999px",
+    border: "1px solid rgba(255,255,255,0.18)",
+    color: "#8b96a0",
+    userSelect: "none",
+  },
+  ".cm-pick:hover": { borderColor: "rgba(255,255,255,0.4)", color: "#d6dbe0" },
+  ".cm-pick-on": {
+    color: "#10130a",
+    background: "#afc944",
+    borderColor: "#afc944",
+    fontWeight: "600",
+  },
+});
+
+export const pickGroups = [pickPlugin, pickTheme];
+
+// ---------------------------------------------------------------------------
+// 1d. Boolean toggles — click a `FLAG = True/False` constant to flip it.
+//
+// Only bare-name assignments (`WOBBLE = True`) get the affordance — not every
+// True/False in the file. A `ctx.arc(..., True)` argument or a `self.x = False`
+// in __init__ is not something you'd want to flip with a stray click.
+// ---------------------------------------------------------------------------
+const boolMark = Decoration.mark({ class: "cm-bool" });
+
+// True if `node` (a Boolean) is the value of a top-levelish `NAME = True/False`.
+function isFlagAssignment(node) {
+  const parent = node.parent;
+  if (!parent || parent.name !== "AssignStatement") return false;
+  const first = parent.firstChild;
+  return first && first.name === "VariableName";
+}
+
+const boolHighlighter = ViewPlugin.fromClass(
+  class {
+    constructor(view) {
+      this.decorations = this.compute(view);
+    }
+    update(u) {
+      if (u.docChanged || u.viewportChanged) this.decorations = this.compute(u.view);
+    }
+    compute(view) {
+      const marks = [];
+      for (const { from, to } of view.visibleRanges) {
+        syntaxTree(view.state).iterate({
+          from,
+          to,
+          enter(node) {
+            if (node.name === "Boolean" && isFlagAssignment(node.node)) {
+              marks.push(boolMark.range(node.from, node.to));
+            }
+          },
+        });
+      }
+      return Decoration.set(marks);
+    }
+  },
+  { decorations: (v) => v.decorations }
+);
+
+const boolClick = EditorView.domEventHandlers({
+  mousedown(event, view) {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.classList.contains("cm-bool")) return false;
+    const pos = view.posAtDOM(target);
+    const tree = syntaxTree(view.state);
+    let node = tree.resolveInner(pos, 1);
+    if (node.name !== "Boolean") node = tree.resolveInner(pos + 1, -1);
+    if (node.name !== "Boolean") return false;
+    const text = view.state.sliceDoc(node.from, node.to);
+    const flipped = text === "True" ? "False" : "True";
+    event.preventDefault();
+    view.dispatch({
+      changes: { from: node.from, to: node.to, insert: flipped },
+      userEvent: "input.pick",
+    });
+    return true;
+  },
+});
+
+const boolTheme = EditorView.baseTheme({
+  ".cm-bool": {
+    cursor: "pointer",
+    borderBottom: "1px dotted currentColor",
+  },
+});
+
+export const boolToggles = [boolHighlighter, boolClick, boolTheme];
+
+// ---------------------------------------------------------------------------
 // 2. Editor construction + live-run plumbing
 // ---------------------------------------------------------------------------
 
@@ -383,15 +615,18 @@ export function createEditor({parent, doc, onChange, debounceMs = 200}) {
         lintGutter(),
         scrubbableNumbers,
         colorSwatches,
+        pickGroups,
+        boolToggles,
         EditorView.updateListener.of((update) => {
           if (!update.docChanged) return;
-          // Scrub drags want near-immediate feedback; typing gets debounced.
-          const isScrub = update.transactions.some(
-            (tr) => tr.isUserEvent("input.scrub"));
+          // Direct manipulation (scrub, pick-a-choice, toggle) wants
+          // near-immediate feedback; typing gets debounced.
+          const isDirect = update.transactions.some(
+            (tr) => tr.isUserEvent("input.scrub") || tr.isUserEvent("input.pick"));
           clearTimeout(timer);
           timer = setTimeout(
             () => onChange(update.state.doc.toString()),
-            isScrub ? 33 : debounceMs);
+            isDirect ? 33 : debounceMs);
         }),
       ],
     }),

@@ -12,6 +12,9 @@ import {
   clearRuntimeError,
   replaceDoc,
 } from "./editor.js";
+import { initLibrary } from "./library.js";
+import { initFlash } from "./flash.js";
+import { initFloat } from "./float.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -39,8 +42,7 @@ let lastPong = 0;
 let lastGoodSrc = null; // last source the badge accepted
 let buttonBits = 0;
 let paused = false;
-let manifest = [];
-let currentDemo = null;
+let library = null;
 let editor = null;
 let bootedOnce = false;
 let swapSeq = 0;
@@ -344,59 +346,19 @@ function bindTransport() {
 }
 
 // ---------------------------------------------------------------------------
-// Demo gallery
-// ---------------------------------------------------------------------------
-async function loadManifest() {
-  const res = await fetch("demos/demos.json");
-  if (!res.ok) throw new Error(`${res.status} loading demos.json`);
-  manifest = await res.json();
-  const nav = $("#demo-chips");
-  for (const demo of manifest) {
-    const chip = document.createElement("button");
-    chip.className = "chip";
-    chip.textContent = demo.title;
-    chip.title = demo.blurb || demo.id;
-    chip.dataset.id = demo.id;
-    chip.addEventListener("click", () => {
-      if (location.hash !== `#${demo.id}`) location.hash = `#${demo.id}`;
-      else switchDemo(demo.id);
-    });
-    nav.appendChild(chip);
-  }
-}
-
-let switchSeq = 0;
-
-async function switchDemo(id) {
-  const demo = manifest.find((d) => d.id === id) || manifest[0];
-  if (!demo) return;
-  const token = ++switchSeq;
-  currentDemo = demo.id;
-  document.title = `${demo.title} · Tildagon live playground`;
-  for (const chip of document.querySelectorAll(".chip")) {
-    chip.classList.toggle("active", chip.dataset.id === demo.id);
-  }
-  const res = await fetch(`demos/${demo.id}.py`);
-  if (!res.ok) throw new Error(`${res.status} loading demo ${demo.id}`);
-  const src = await res.text();
-  if (token !== switchSeq) return; // a newer switch overtook this fetch
-  // replaceDoc triggers the editor's change listener, which swaps the app —
-  // same live path as typing. Nothing to reload, ever.
-  replaceDoc(editor, src);
-}
-
-// ---------------------------------------------------------------------------
 // Wire-up
 // ---------------------------------------------------------------------------
 async function main() {
   buildBadge();
   bindKeyboard();
   bindTransport();
+  const float = initFloat();
 
   editor = createEditor({
     parent: $("#editor"),
     doc: "",
     onChange: (src) => {
+      library?.onCodeChanged(src);
       if (!src.trim()) return;
       requestSwap(src);
     },
@@ -405,19 +367,27 @@ async function main() {
   spawnWorker();
   startWatchdog();
 
-  await loadManifest();
-  const fromHash = location.hash.replace(/^#/, "");
-  await switchDemo(fromHash || manifest[0]?.id);
+  // The gallery + snippet library owns the chips, the toolbar and the hash.
+  library = await initLibrary({
+    setCode: (src) => replaceDoc(editor, src),
+    getCode: () => editor.state.doc.toString(),
+    onTitle: (name) => {
+      document.title = `${name} · Tildagon live playground`;
+    },
+  });
 
-  window.addEventListener("hashchange", () => {
-    const id = location.hash.replace(/^#/, "");
-    if (id && id !== currentDemo) switchDemo(id);
+  const flash = initFlash({
+    getCode: () => editor.state.doc.toString(),
+    getName: () => library.currentName(),
   });
 
   // Small hook for headless QA (and console tinkerers).
   window.playground = {
     editor,
     send,
+    library,
+    flash,
+    float,
     setCode: (src) => replaceDoc(editor, src),
     getCode: () => editor.state.doc.toString(),
     isReady: () => workerReady,

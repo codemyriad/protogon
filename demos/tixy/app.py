@@ -56,24 +56,37 @@ def bloom(t, i, x, y):
     d = ((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5
     return 3.2 - d + math.sin(t) * 2.4
 
-FORMULAS = (waves, spin, ripple, plaid, bloom)
-NAMES = ("waves", "spin", "ripple", "plaid", "bloom")
+# --------------------------- pick the live one -------------------------------
+# Click a name to run it -- the badge switches instantly, without restarting.
+# (On a real badge, LEFT/RIGHT cycle through them.) It's just a commented-out
+# line each: uncomment the one you want, or edit the formula above it.
+LIVE = waves      #: waves
+# LIVE = spin     #: spin
+# LIVE = ripple   #: ripple
+# LIVE = plaid    #: plaid
+# LIVE = bloom    #: bloom
+
+ORDER = (waves, spin, ripple, plaid, bloom)   # what LEFT/RIGHT cycle on a badge
 
 
 class Tixy(app.App):
-    """Keep time, listen to buttons, ask the formula, draw the dots."""
+    # Keep time, listen to buttons, ask the formula, draw the dots.
 
     def __init__(self, config=None):
         super().__init__()
         self.button_states = Buttons(self)
-        self.fg = False        # have we taken the screen yet?
-        self.t = 0.0           # seconds since start, scaled by speed
-        self.mode = 0          # which formula is live
+        self.fg = False            # have we taken the screen yet?
+        self.t = 0.0               # seconds since start, scaled by speed
+        self.formula = LIVE        # the live formula (set by the picker above)
         self.speed = 1.0
         # precompute each dot's screen position once
         origin = -(GRID - 1) * SPACING / 2.0   # centres the grid
         self.cells = [(origin + x * SPACING, origin + y * SPACING, x, y)
                       for y in range(GRID) for x in range(GRID)]
+
+    # Carry time + speed across live edits, but NOT the formula: that way
+    # clicking a new formula above swaps it in immediately.
+    __live_state__ = ("t", "speed")
 
     def update(self, delta):
         if not self.fg:
@@ -85,12 +98,11 @@ class Tixy(app.App):
             b.clear()
             self.minimise()
             return False
-        if b.get(BUTTON_TYPES["RIGHT"]):
+        if b.get(BUTTON_TYPES["RIGHT"]) or b.get(BUTTON_TYPES["LEFT"]):
+            step = 1 if b.get(BUTTON_TYPES["RIGHT"]) else -1
             b.clear()
-            self.mode = (self.mode + 1) % len(FORMULAS)
-        if b.get(BUTTON_TYPES["LEFT"]):
-            b.clear()
-            self.mode = (self.mode - 1) % len(FORMULAS)
+            here = ORDER.index(self.formula) if self.formula in ORDER else 0
+            self.formula = ORDER[(here + step) % len(ORDER)]
         if b.get(BUTTON_TYPES["UP"]):
             b.clear()
             self.speed = min(4.0, self.speed * 1.5)
@@ -102,7 +114,7 @@ class Tixy(app.App):
     def draw(self, ctx):
         ctx.save()
         ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
-        formula = FORMULAS[self.mode % len(FORMULAS)]
+        formula = self.formula
         dot_max = SPACING * 0.46          # biggest dot that still leaves a gap
         for (px, py, x, y) in self.cells:
             value = formula(self.t, y * GRID + x, x, y)
@@ -118,14 +130,14 @@ class Tixy(app.App):
         ctx.rgb(0.7, 0.7, 0.7)
         ctx.font_size = 16
         ctx.text_align = ctx.CENTER
-        ctx.move_to(0, 112).text(NAMES[self.mode % len(NAMES)])
+        ctx.move_to(0, 112).text(formula.__name__)
         ctx.restore()
 
 
 __app_export__ = Tixy
 
 # ------------------------------ try this --------------------------------------
-# - drag the 7.5 in ripple() sideways and watch the splash centre follow you
+# - click ripple above, then drag the 7.5 in ripple() sideways: the splash follows
 # - in waves(), change math.cos to math.sin -- then try math.tan (chaos)
 # - add your own formula:  def stripes(t, i, x, y): return math.sin(x - t * 3)
-#   then add it to FORMULAS and NAMES, and press RIGHT until it comes up
+#   then add a "# LIVE = stripes  #: stripes" line to the picker and click it

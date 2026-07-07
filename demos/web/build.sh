@@ -13,6 +13,10 @@ set -euo pipefail
 
 PYODIDE_VERSION=314.0.2
 BADGE_SHA=517f12c478ddef7bd86f277bd30c7f0ee6cb1874
+# mpy-cross compiled to wasm (MIT, pybricks) — emits pure-bytecode .mpy v6.0,
+# loadable by any v6 firmware incl. the Tildagon pin (MicroPython 1.28.0).
+MPYCROSS_VERSION=2.0.0
+MPYCROSS_SHA256=a861d4fe8dff977536575c39c9ec7072e7e9bdd39846e113148920a10117181d
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEMOS_DIR="$(dirname "$HERE")"
@@ -88,6 +92,7 @@ cp "$HERE/boot.py" "$DIST/boot.py"
 
 # --- 3. demo sources + manifest -----------------------------------------------
 echo ">> collecting demos"
+rm -rf "$DIST/demos"   # else renamed/removed demos linger from an earlier build
 mkdir -p "$DIST/demos"
 python3 - "$DEMOS_DIR" "$DIST/demos" <<'EOF'
 import json, os, re, shutil, sys
@@ -183,6 +188,29 @@ node_modules/.bin/esbuild src/app.js --bundle --format=esm --minify --target=es2
   --define:__BUILD_ID__="\"$BUILD_ID\"" --outfile="$DIST/app.js"
 node_modules/.bin/esbuild src/sim-worker.js --bundle --format=esm --minify --target=es2020 \
   --define:__BUILD_ID__="\"$BUILD_ID\"" --outfile="$DIST/sim-worker.js"
+
+# --- 4b. mpy-cross (wasm) --------------------------------------------------------
+# The npm package ships a CommonJS wrapper + Emscripten UMD glue; esbuild
+# re-wraps them as one browser ES module. The wasm is fetched at runtime via
+# the URL flash.js passes as compile()'s 4th argument.
+MPY_TGZ="$CACHE/mpy-cross-v6-$MPYCROSS_VERSION.tgz"
+if [ ! -f "$MPY_TGZ" ]; then
+  echo ">> fetching @pybricks/mpy-cross-v6 $MPYCROSS_VERSION"
+  curl -fsSL "https://registry.npmjs.org/@pybricks/mpy-cross-v6/-/mpy-cross-v6-$MPYCROSS_VERSION.tgz" -o "$MPY_TGZ.tmp"
+  echo "$MPYCROSS_SHA256  $MPY_TGZ.tmp" | sha256sum -c - >/dev/null
+  mv "$MPY_TGZ.tmp" "$MPY_TGZ"
+fi
+MPY_SRC="$CACHE/mpy-cross-src"
+rm -rf "$MPY_SRC"
+mkdir -p "$MPY_SRC"
+tar -xzf "$MPY_TGZ" -C "$MPY_SRC" --strip-components=1 \
+  package/build/index.js package/build/mpy-cross-v6.js package/build/mpy-cross-v6.wasm package/LICENSE
+mkdir -p "$DIST/mpy-cross"
+node_modules/.bin/esbuild "$MPY_SRC/build/index.js" --bundle --format=esm --minify \
+  --platform=browser --target=es2020 --external:fs --external:path \
+  --outfile="$DIST/mpy-cross/index.js"
+cp "$MPY_SRC/build/mpy-cross-v6.wasm" "$DIST/mpy-cross/mpy-cross-v6.wasm"
+cp "$MPY_SRC/LICENSE" "$DIST/mpy-cross/LICENSE.txt"
 
 cp "$HERE/src/style.css" "$DIST/"
 # Version the page's own entry points too, for caches that ignore no-store

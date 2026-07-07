@@ -7,6 +7,7 @@
   --text: #d6dbe0;
   --dim: #7f8a94;
   --accent: #afc944;   /* tildagon pale green */
+  --warn: #d9a441;
   --error: #ff6b6b;
   font-size: 15px;
 }
@@ -42,12 +43,34 @@ header {
 .brand { white-space: nowrap; color: var(--dim); }
 .brand strong { color: var(--text); font-weight: 600; }
 
-#demo-chips {
+#chips-scroll {
   display: flex;
+  align-items: center;
   gap: 0.35rem;
   overflow-x: auto;
   scrollbar-width: thin;
   padding-bottom: 2px;
+  min-width: 0;
+}
+
+#demo-chips, #snippet-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+}
+
+#snippet-chips:not(:empty) {
+  border-left: 1px solid var(--line);
+  padding-left: 0.55rem;
+  margin-left: 0.2rem;
+}
+
+.chips-label {
+  color: var(--dim);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .chip {
@@ -67,6 +90,138 @@ header {
   background: var(--accent);
   border-color: var(--accent);
   font-weight: 600;
+}
+.chip-mine { border-style: dashed; }
+.chip-mine.active { border-style: solid; }
+.chip-new { border-style: dotted; color: var(--dim); }
+
+/* --- editor toolbar --------------------------------------------------------- */
+#toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#snip-name {
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 0.15rem 0.4rem;
+  min-width: 0;
+  width: 13em;
+}
+#snip-name:not(.as-label):hover,
+#snip-name:not(.as-label):focus {
+  border-color: var(--line);
+  background: var(--bg);
+  outline: none;
+}
+#snip-name.as-label { pointer-events: none; font-weight: 600; }
+
+#dirty-dot { color: var(--warn); flex: none; }
+
+.tbtn {
+  flex: none;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.18rem 0.55rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tbtn:hover:not(:disabled) { border-color: var(--dim); }
+.tbtn:disabled { opacity: 0.4; cursor: default; }
+#btn-flash { color: var(--accent); }
+#btn-delete:hover { color: var(--error); border-color: var(--error); }
+
+#toolbar-msg {
+  flex: 1;
+  min-width: 2rem;
+  text-align: right;
+  font-size: 0.76rem;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#toolbar-msg.show { opacity: 1; }
+
+#size-badge {
+  flex: none;
+  font-size: 0.76rem;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+#size-badge.warn { color: var(--warn); }
+#size-badge.over { color: var(--error); font-weight: 700; }
+
+#lib-menu { position: relative; flex: none; }
+#lib-menu summary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.8rem;
+  user-select: none;
+}
+#lib-menu summary::-webkit-details-marker { display: none; }
+#lib-menu summary:hover { border-color: var(--dim); color: var(--text); }
+#lib-menu .menu-items {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 12.5em;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.25rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+#lib-menu .menu-items button {
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#lib-menu .menu-items button:hover { background: var(--bg); }
+#lib-menu .menu-items hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0.25rem 0.2rem;
+}
+
+kbd {
+  font: 0.85em ui-monospace, monospace;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 0.3em;
 }
 
 /* --- main layout ---------------------------------------------------------- */
@@ -282,6 +437,96 @@ main {
 .c-out { color: var(--dim); }
 .c-err { color: var(--error); }
 
+/* --- flash dialog ----------------------------------------------------------- */
+#flash-dialog {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0;
+  width: min(94vw, 34rem);
+  font-size: 0.9rem;
+}
+#flash-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+#flash-dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+.flash-body { padding: 0.75rem 0.9rem 0.9rem; }
+.flash-body p, .flash-body ol { margin: 0.4rem 0; line-height: 1.5; }
+.flash-body ol { padding-left: 1.3rem; }
+.flash-primary { color: var(--accent); border-color: var(--accent); }
+.flash-err, .err { color: var(--error); }
+.flash-ok { color: var(--accent); }
+.dim { color: var(--dim); }
+.flash-busy { color: var(--dim); }
+.flash-anydev {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--dim);
+}
+.flash-log {
+  margin: 0.5rem 0;
+  padding: 0.45rem 0.6rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: 11.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+.flash-ports { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.5rem 0; }
+.flash-port {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+.flash-port:has(input:checked) { border-color: var(--accent); }
+.flash-port.off { opacity: 0.55; cursor: default; }
+.flash-port em { display: block; font-style: normal; font-size: 0.78rem; }
+.flash-opts { margin: 0.6rem 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.flash-opts input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.15rem 0.4rem;
+}
+.flash-opts fieldset {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.flash-opts legend { color: var(--dim); font-size: 0.78rem; padding: 0 0.3rem; }
+.flash-note { font-size: 0.76rem; margin: 0.1rem 0 0; }
+.flash-adv summary { color: var(--dim); font-size: 0.78rem; cursor: pointer; }
+.flash-adv label { margin-right: 0.8rem; }
+.flash-bar {
+  display: inline-block;
+  width: 5.5rem;
+  height: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-left: 0.3rem;
+}
+.flash-bar div { height: 100%; background: var(--accent); }
+.flash-bar.warn div { background: var(--warn); }
+.flash-bar.over div { background: var(--error); }
+
 /* --- footer ---------------------------------------------------------------- */
 footer {
   flex: none;
@@ -294,8 +539,141 @@ footer {
 
 /* --- narrow screens --------------------------------------------------------- */
 @media (max-width: 900px) {
+  /* Fallback layout if float.js hasn't run yet: badge stacked above editor. */
   main { flex-direction: column-reverse; overflow-y: auto; }
   #editor-pane { border-right: none; min-height: 60vh; }
   #badge-pane { max-width: none; }
   #badge { width: min(100%, 420px); }
+
+  /* ===== floating "picture-in-picture" badge (body.float-active) ===========
+     JS (float.js) adds .float-active on narrow screens and .badge-expanded
+     when the disc is opened up. Everything here is scoped to those classes so
+     the pre-JS fallback above and the desktop layout stay untouched. */
+  :root { --mini-size: clamp(150px, 43vw, 220px); }
+
+  /* Editor owns the whole viewport; the badge pane leaves the flow. */
+  body.float-active main {
+    flex-direction: column;
+    overflow: hidden;
+  }
+  body.float-active #editor-pane {
+    border-right: none;
+    min-height: 0;
+    height: 100%;
+  }
+
+  /* ---- the floating disc (mini) ---- */
+  body.float-active #badge-pane {
+    position: fixed;
+    z-index: 40;
+    left: var(--fx, auto);
+    top: var(--fy, auto);
+    width: var(--mini-size);
+    height: var(--mini-size);
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(0, 0, 0, 0.25);
+    touch-action: none;
+    transition: box-shadow 120ms ease;
+  }
+  body.float-active.badge-dragging #badge-pane {
+    transition: none;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(175, 201, 68, 0.35);
+    cursor: grabbing;
+  }
+
+  /* In mini, show the screen + LED ring only: scale the badge up so the ring
+     fills the disc and the outer artwork / buttons crop away. The badge itself
+     is inert (drag the disc; no accidental tilt or button presses). */
+  body.float-active:not(.badge-expanded) #badge-pane { cursor: grab; }
+  body.float-active:not(.badge-expanded) #badge {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    transform: scale(1.28);
+    transform-origin: center;
+    pointer-events: none;
+  }
+  body.float-active:not(.badge-expanded) #transport,
+  body.float-active:not(.badge-expanded) #badge-hint,
+  body.float-active:not(.badge-expanded) #console {
+    display: none;
+  }
+
+  /* ---- the expand / collapse handle ---- */
+  .badge-fab {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: inherit;
+    line-height: 1;
+    color: var(--text);
+    background: rgba(20, 23, 26, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    cursor: pointer;
+    padding: 0;
+  }
+  body.float-active:not(.badge-expanded) .badge-fab {
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 22px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+  }
+
+  /* ---- expanded overlay ---- */
+  body.float-active.badge-expanded #badge-pane {
+    inset: 0;
+    z-index: 50;
+    width: auto;
+    height: auto;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 3rem 1rem 1.4rem;
+    gap: 0.7rem;
+    overflow-y: auto;
+    touch-action: auto;
+  }
+  body.float-active.badge-expanded #badge {
+    width: min(78vw, 340px);
+    transform: none;
+    pointer-events: auto;
+  }
+  /* Touch devices have no hover: surface the button hotspots so they're usable. */
+  body.float-active.badge-expanded .btn-hotspot {
+    color: rgba(255, 255, 255, 0.75);
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(0, 0, 0, 0.25);
+  }
+  body.float-active.badge-expanded .badge-fab {
+    top: 10px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+  }
+
+  /* In mini the button hotspots are far too small to hit — turn them off so a
+     stray tap can't fire a badge button (dragging is handled on the disc). */
+  body.float-active:not(.badge-expanded) .btn-hotspot { pointer-events: none; }
 }

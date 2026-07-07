@@ -29,7 +29,13 @@ WHIRL      = 0.2          # spin of the whole flake ....... try 1.0, or -0.4
 HUE_DRIFT  = 0.05         # colours creep round the rainbow ... rush them: 0.40
 SQUASH     = 0.5          # dot orbit shape: 1.0 round loop, 0.1 flat pancake
 LINE_W     = 2.0          # spoke thickness ................... chunky: 6.0
+ORBIT_MIN  = 30           # closest the big dot orbits ....... try 10
+ORBIT_MAX  = 80           # furthest the big dot orbits ...... try 118 (wild)
+SPIN_MIN   = 0.6          # slowest a reroll can spin ........ try 0.1 (lazy)
+SPIN_MAX   = 2.2          # fastest a reroll can spin ........ try 5.0 (dizzy)
+DOT_MIN    = 6            # smallest dot a reroll can pick ... try 12
 DOT_MAX    = 16           # biggest dot a reroll can pick ..... 30, then CONFIRM
+REACH_MIN  = 60           # shortest spoke a reroll can pick .. try 20
 REACH_MAX  = 105          # longest spoke a reroll can pick ... 118 kisses the rim
 
 TAU = 6.28318
@@ -68,11 +74,11 @@ class Kaleidoscope(app.App):
 
     def reseed(self):
         # roll a fresh doodle: how far the big dot orbits, how fast, how big
-        self.orbit = random.uniform(30, 80)
-        self.spin = random.uniform(0.6, 2.2) * random.choice((-1, 1))
-        self.dot = random.uniform(6, DOT_MAX)
+        self.orbit = random.uniform(ORBIT_MIN, ORBIT_MAX)
+        self.spin = random.uniform(SPIN_MIN, SPIN_MAX) * random.choice((-1, 1))
+        self.dot = random.uniform(DOT_MIN, DOT_MAX)
         self.hue = random.random()
-        self.reach = random.uniform(60, REACH_MAX)
+        self.reach = random.uniform(REACH_MIN, REACH_MAX)
 
     def update(self, delta):
         if not self.fg:

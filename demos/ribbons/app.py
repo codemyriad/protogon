@@ -9,7 +9,7 @@
 #   anchor and glides through the midpoint beyond it, the classic trick for
 #   a spline with no kinks. Copies with the wave shifted along braid together.
 #
-# PRIOR ART  in the spirit of the old "Mystify" screensaver ribbons
+# PRIOR ART  in the spirit of the old "Mystify" screensaver -- https://en.wikipedia.org/wiki/Mystify
 #
 # BUTTONS   RIGHT/LEFT change how many ribbons braid - CANCEL exits
 #
@@ -24,6 +24,7 @@ from system.scheduler.events import RequestForegroundPushEvent
 # ------------------------------ tweak me -------------------------------------
 # In the playground every number is draggable -- grab one and watch the badge.
 RIBBONS    = 3      # ribbons in the braid (RIGHT/LEFT change this too).. try 6
+R_MIN, R_MAX = 2, 6  # ribbon-count range RIGHT/LEFT walks .. try 1, 9
 ANCHORS    = 7      # anchor points per ribbon ........ try 4 (angular) or 12
 SWAY       = 70.0   # how far anchors swing up and down, px ........ try 110.0
 SWAY_SPEED = 0.8    # speed of the big swing ............... try 2.0 (frantic)
@@ -81,8 +82,8 @@ class Ribbons(app.App):
     def draw(self, ctx):
         ctx.save()
         ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
-        # the button offset wraps so the braid always has 2..6 ribbons
-        count = 2 + (RIBBONS - 2 + self.shift) % 5
+        # the button offset wraps so the braid always has R_MIN..R_MAX ribbons
+        count = R_MIN + (RIBBONS - R_MIN + self.shift) % (R_MAX - R_MIN + 1)
         ctx.line_width = THICKNESS
         for r in range(count):
             phase = r * (6.28318 / count)   # spread the copies round the wave

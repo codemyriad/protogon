@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tildagon live playground</title>
-<meta name="description" content="EMF Tildagon badge demos running on the real firmware scheduler and renderer, in your browser, next to an editor. Edits go live as you type.">
+<meta name="description" content="EMF Tildagon badge demos running on the real firmware scheduler and renderer, in your browser, next to an editor. Edits go live as you type; save your own snippets and flash them to a hexpansion.">
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⬡</text></svg>">
 </head>
@@ -12,11 +12,35 @@
 
 <header>
   <div class="brand">⬡ <strong>Tildagon</strong> live playground</div>
-  <nav id="demo-chips" aria-label="demos"></nav>
+  <div id="chips-scroll">
+    <nav id="demo-chips" aria-label="demos"></nav>
+    <nav id="snippet-chips" aria-label="my snippets"></nav>
+  </div>
 </header>
 
 <main>
   <section id="editor-pane">
+    <div id="toolbar">
+      <input id="snip-name" spellcheck="false" autocomplete="off" aria-label="snippet name">
+      <span id="dirty-dot" title="unsaved edits (autosaved as a draft)" hidden>●</span>
+      <button id="btn-revert" class="tbtn" title="discard edits, back to the saved version" hidden>revert</button>
+      <button id="btn-save" class="tbtn">save</button>
+      <button id="btn-fork" class="tbtn" title="save a copy as a new snippet" hidden>fork</button>
+      <button id="btn-delete" class="tbtn" title="delete this snippet" hidden>delete</button>
+      <span id="toolbar-msg" role="status"></span>
+      <span id="size-badge"></span>
+      <button id="btn-flash" class="tbtn" title="write this program to a hexpansion EEPROM over USB">⚡ flash…</button>
+      <details id="lib-menu">
+        <summary title="more">⋯</summary>
+        <div class="menu-items">
+          <button id="menu-download">download .py</button>
+          <button id="menu-share">copy share link</button>
+          <hr>
+          <button id="menu-export">back up all snippets</button>
+          <button id="menu-import">import snippets…</button>
+        </div>
+      </details>
+    </div>
     <div id="editor"></div>
     <div id="editor-hint">
       Edits go live as you type — nothing to run, nothing to reload.
@@ -24,6 +48,7 @@
       colour swatch <span class="swatch-hint"></span> to open a picker.
       If an edit breaks, the badge keeps running the last working code
       (<span class="stale-hint">●</span> marks that) and the error is pinned to its line.
+      Edits autosave as drafts; <kbd>Ctrl</kbd>+<kbd>S</kbd> keeps them as a snippet.
     </div>
   </section>
 
@@ -64,6 +89,8 @@
   <a href="code.md">all the code in one file</a> ·
   in the spirit of <a href="https://worrydream.com/LearnableProgramming/">Learnable Programming</a>
 </footer>
+
+<dialog id="flash-dialog"></dialog>
 
 <script type="module" src="app.js"></script>
 </body>

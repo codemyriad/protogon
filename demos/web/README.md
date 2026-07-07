@@ -3,12 +3,47 @@
 The demos in this folder, running in a web page — next to their source code,
 live. Edit the code and the badge changes as you type: no run button, no
 reload, no install. Break the code and the badge keeps running the last
-working version while the error is pinned to the offending line. Drag any
-number literal to scrub it. Pause badge time and edits re-render the frozen
+working version while the error is pinned to the offending line.
+
+Direct-manipulation editing: **drag** any number literal to scrub it, **click**
+a colour swatch for a picker, **click** a `#:` pick-one choice to swap it live,
+**click** a `FLAG = True/False`. Pause badge time and edits re-render the frozen
 frame.
 
 Every page is one demo: `/#tixy`, `/#ledring`, … The chips at the top switch
 between all fourteen.
+
+## Keep your own snippets
+
+The demos are read-only starting points. The moment you edit one, the toolbar
+lets you **save** it as your own snippet (they live in `localStorage`); from
+there **fork** variants, **rename**, **revert**. Unsaved edits autosave as a
+draft keyed to what you were editing, so closing the tab never loses work.
+`+ new` starts from a small template. The `⋯` menu **downloads a `.py`**,
+copies a **share link** (the whole program deflate-packed into the URL — no
+server), and **backs up / imports** all your snippets as JSON.
+
+The byte counter next to the name shows the size after comments are stripped,
+against the ~6.5 KB a hexpansion EEPROM holds — it turns amber, then red, as
+you approach the limit.
+
+## Flash it to a hexpansion
+
+`⚡ flash…` writes the current program to a
+[Protogon](https://github.com/codemyriad/protogon) (or any writable hexpansion
+EEPROM) over USB, straight from the browser — no `mpremote`, no toolchain. It
+speaks the MicroPython raw-REPL protocol over
+[WebSerial](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API)
+(Chrome/Edge on a computer), scans all six ports, and shows which EEPROMs are
+writable (a write-protected chip ACKs and silently drops writes, so it probes
+by writing and reading back). Pick a port, pick `app.py` (source, comments
+stripped) or `app.mpy` (compiled to bytecode in the browser, roughly half the
+size), and it flashes with a live progress log, then reboots the badge so your
+app mounts and runs.
+
+Needs badge firmware **v1.12.0+** — older firmware can't read the Zetta EEPROM
+and wedges the slot on insert; the dialog warns if it sees an older version.
+`?mockserial=1` runs the whole flow against a fake badge for testing.
 
 ## Run it
 
@@ -50,23 +85,33 @@ instance so the animation never restarts, probes one hidden update+draw
 frame to reject broken code before it can take the screen, then swaps the
 instance through the firmware's own `RequestStopAppEvent` /
 `RequestStartAppEvent`. An app can override the state heuristic by defining
-`__live_state__ = ("t", "mode")`.
+`__live_state__ = ("t", "speed")` — listing exactly which scalars to carry, so
+a value the user just picked (a formula, a palette) is deliberately left out
+and takes effect immediately.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `build.sh` | assemble `dist/` (downloads pyodide + firmware, pinned) |
+| `build.sh` | assemble `dist/` (downloads pyodide + firmware + mpy-cross, pinned) |
 | `serve.py` | dev server with the right mime types + isolation headers |
 | `boot.py` | Pyodide-side bootstrap: sys.path, crash hook, scheduler boot, hot-swap |
 | `overlay/` | the three browser fakes + pygame stub (see above) |
 | `src/sim-worker.js` | the worker: WASI shim, Pyodide boot, `chost` bridge |
 | `src/app.js` | the page: badge chrome, gallery, transport, watchdog |
-| `src/editor.js` | CodeMirror 6 + scrubbable numbers + error pinning |
+| `src/editor.js` | CodeMirror 6: scrub, colour swatch, pick-one, bool toggle, error pinning |
+| `src/store.js` | snippet + draft storage, share-link encode, JSON export/import |
+| `src/library.js` | the gallery + snippet toolbar, hash routing, size gauge |
+| `src/flash.js` | the `⚡ flash…` dialog: connect → scan → pick → flash |
+| `src/serial.js` | WebSerial MicroPython raw-REPL client (mpremote, in the page) |
+| `src/badge-scripts.js` | the Python run on the badge to scan + flash EEPROMs |
+| `src/mpy.js` | `.py → .mpy` via the bundled mpy-cross wasm |
+| `src/mockserial.js` | fake badge for `?mockserial=1` (headless flash QA) |
+| `src/float.js` | mobile picture-in-picture badge (draggable, expandable) |
 
 Pinned versions: pyodide `314.0.2`, `badge-2024-software`
-`517f12c478ddef7bd86f277bd30c7f0ee6cb1874`, CodeMirror packages in
-`package.json`.
+`517f12c478ddef7bd86f277bd30c7f0ee6cb1874`, `@pybricks/mpy-cross-v6` `2.0.0`
+(emits pure-bytecode `.mpy` v6), CodeMirror packages in `package.json`.
 
 ## Credits
 

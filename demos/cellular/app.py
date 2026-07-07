@@ -30,7 +30,10 @@ STEP_EVERY = 3                 # frames per generation ..... 1 races, 8 crawls
 SEED       = 0.32              # fraction alive on reseed  lonely 0.1, mobbed 0.6
 GAP        = 0.6               # grout between cells  0.0 fuses, 3.0 makes beads
 AGE_TINT   = 0.1               # how fast Life survivors blush red .... try 0.5
+LIFE_YOUNG = (0.2, 1.0, 0.3)   # Life cell, freshly born (green)
+LIFE_OLD   = (1.0, 0.4, 0.3)   # Life cell, old survivor (red blush)
 FIRING     = (0.4, 0.8, 1.0)   # Brian's Brain spark colour (electric blue)
+TIRED      = (0.1, 0.2, 0.4)   # Brian's Brain tired colour (dim)
 
 OFF = -(GRID - 1) * CELL / 2.0     # leftmost column, so the grid sits centred
 
@@ -126,9 +129,11 @@ class Cellular(app.App):
                     continue          # empty cells stay black and cost nothing
                 if rule == 0:
                     blush = min(1.0, self.age[y][x] * AGE_TINT)
-                    ctx.rgb(0.2 + 0.8 * blush, 1.0 - 0.6 * blush, 0.3)
+                    ctx.rgb(LIFE_YOUNG[0] + (LIFE_OLD[0] - LIFE_YOUNG[0]) * blush,
+                            LIFE_YOUNG[1] + (LIFE_OLD[1] - LIFE_YOUNG[1]) * blush,
+                            LIFE_YOUNG[2] + (LIFE_OLD[2] - LIFE_YOUNG[2]) * blush)
                 elif rule == 1:
-                    c = FIRING if v == 1 else (0.1, 0.2, 0.4)   # tired = dim
+                    c = FIRING if v == 1 else TIRED   # tired = dim
                     ctx.rgb(c[0], c[1], c[2])
                 else:
                     c = CYCLE_COLOURS[v % 4]

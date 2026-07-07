@@ -15,6 +15,7 @@
 #   badge: drop demos/qix into the official simulator's sim/apps/ (see README)
 import app
 import math
+import random
 from events.input import Buttons, BUTTON_TYPES
 from system.eventbus import eventbus
 from system.scheduler.events import RequestForegroundPushEvent
@@ -28,6 +29,7 @@ BOX       = 106                # half-width of the bounce box ... squeeze to 60
 SPEED_MIN = 70.0               # slowest fresh point, pixels per second
 SPEED_MAX = 110.0              # fastest fresh point ..... try 300.0 (frantic)
 RAINBOW   = 0.15               # hue turns per second in rainbow mode: try 0.5
+LED_WAVE  = 2.0                # LED ring wave speed ..... try 6.0 (busy) or 0.5
 EMBER     = (1.0, 0.4, 0.1)    # second palette: glowing coals
 ICE       = (0.3, 0.9, 1.0)    # third palette: cold blue
 
@@ -55,7 +57,6 @@ class Qix(app.App):
 
     def respawn(self):
         # throw self.npts fresh points into the box, each flying its own way
-        import random
         self.pts = []
         for _ in range(self.npts):
             ang = random.uniform(0, 6.28)
@@ -110,7 +111,7 @@ class Qix(app.App):
     def light_ring(self):
         # the LEDs breathe the head colour, a slow wave chasing round the ring
         r, g, bl = self.head_colour()
-        base = self.t * 2.0                      # wave speed -- drag me
+        base = self.t * LED_WAVE                 # wave speed
         for i in range(1, 13):
             glow = 0.35 + 0.65 * (0.5 + 0.5 * math.sin(base + i * 0.52))
             tildagonos.leds[i] = (int(r * 255 * glow), int(g * 255 * glow),

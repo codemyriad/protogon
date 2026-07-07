@@ -25,10 +25,12 @@ from system.scheduler.events import RequestForegroundPushEvent
 # In the playground every number is draggable -- grab one and watch the badge.
 RINGS    = 11                  # rings per family ....... try 6 (airy) or 16
 RING_GAP = 8.0                 # px between ring radii .. squeeze them: 5.0
+INNER    = 14                  # innermost ring radius . try 30 (big hole)
 DRIFT    = 30.0                # how far a family wanders off-centre.. try 70.0
 SPEED    = 1.0                 # drift speed ............ try 3.0 (dizzy)
 STAGGER  = 0.30                # wander delay, ring to ring.. try 0.0 or 0.9
 SIDES    = 6                   # corners in hexagon mode.. try 3 (triangles)
+LINE_W   = 1.6                 # line thickness, px .... thin best: 3.0
 CYAN     = (0.15, 0.75, 1.0)   # first family's colour
 PINK     = (1.0, 0.25, 0.55)   # second family's colour (the mirror twin)
 
@@ -89,7 +91,7 @@ class Moire(app.App):
     def draw(self, ctx):
         ctx.save()
         ctx.rgb(0, 0, 0).rectangle(-120, -120, 240, 240).fill()
-        ctx.line_width = 1.6              # thin lines moire best... try 3.0
+        ctx.line_width = LINE_W           # thin lines moire best
         t = self.t
         spin = t * 0.4                    # how fast the hexagons rotate
         for k in range(RINGS):
@@ -98,7 +100,7 @@ class Moire(app.App):
             wobble = t + k * STAGGER
             ox = math.sin(wobble) * DRIFT
             oy = math.cos(wobble * 1.3) * DRIFT   # 1.3 = loopy, 1.0 = round
-            radius = 14 + k * RING_GAP            # 14 = the innermost ring
+            radius = INNER + k * RING_GAP         # the innermost ring
             # family one: cool, outer rings a shade warmer to hint at depth
             ctx.rgba(CYAN[0] + 0.05 * k, CYAN[1], CYAN[2], 0.42)
             self.ring(ctx, ox, oy, radius, spin)

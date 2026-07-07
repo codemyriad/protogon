@@ -8,6 +8,8 @@
 #   Same numbers in, same light out -- glass and bezel can never drift apart.
 #   (A system service owns the LEDs; we borrow the ring and return it on exit.)
 #
+# PRIOR ART  the classic Larson scanner / Cylon eye -- https://en.wikipedia.org/wiki/Larson_scanner
+#
 # BUTTONS   LEFT/RIGHT cycle comet -> pulse -> rainbow - CANCEL exits
 #
 #   sim:   python3 demos/sim/run.py ledring --gif
@@ -30,8 +32,10 @@ RING = 88                   # radius of the on-screen ring .... pull it in: 60
 DOT_MIN = 9                 # dot size when its LED is dark ... try 4
 DOT_GROW = 6                # extra size at full brightness ... try 14 (blobby)
 PULSE_RATE = 3.0            # heartbeats, roughly per second .. calm it: 1.0
+PULSE_TWIST = 0.0           # pulse phase twist per LED .. try 0.5 (chasing wave)
 SPIN = 0.2                  # rainbow turns per second .. try -0.2 to reverse
 COMET = (1.0, 0.6, 0.1)     # comet colour (amber) .. icy: (0.2, 0.6, 1.0)
+PULSE = (0.1, 1.0, 1.0)     # pulse colour (teal) .. warm: (1.0, 0.4, 0.1)
 
 
 def hue(h):
@@ -97,9 +101,9 @@ class Ledring(app.App):
                 out.append((f * COMET[0], f * COMET[1], f * COMET[2]))
             elif self.mode == 1:                      # pulse
                 # every LED breathes together (drag the 0.0 to twist it)
-                wave = math.sin(t * PULSE_RATE - i * 0.0)
+                wave = math.sin(t * PULSE_RATE - i * PULSE_TWIST)
                 f = 0.15 + 0.85 * (0.5 + 0.5 * wave)
-                out.append((0.1 * f, f, f))
+                out.append((PULSE[0] * f, PULSE[1] * f, PULSE[2] * f))
             else:                                     # rainbow
                 out.append(hue(i / 12.0 + t * SPIN))  # each LED 1/12 further
         return out, head

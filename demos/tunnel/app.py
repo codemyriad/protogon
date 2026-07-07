@@ -30,33 +30,43 @@ BREATH   = 3.0    # how fast the bright band rolls outward.. try 6.0 or 0.8
 RIPPLE   = 0.55   # wave crowding: bigger squeezes more bands in.. try 1.6
 WANDER   = 12.0   # how far the tunnel mouth drifts ........ 30.0 gets seasick
 
-# Each scheme is a tint: how much of the brightness each channel keeps.
-# (Values over 1.0 make that channel hit full blast early.)
-SCHEMES = (
-    (1.0, 1.0, 1.1),     # moonlight -- white with a cold blue edge
-    (1.4, 0.6, 0.15),    # fire
-    (0.2, 0.8, 1.3),     # ice
-)
+# --------------------------- pick the colours --------------------------------
+# Click a scheme to switch it live (on a real badge, LEFT/RIGHT cycle them).
+# Each is a tint -- how much of each channel a ring keeps. Every value is
+# 0..1, so its swatch opens a colour picker; BOOST lets a channel hit full
+# blast a little before the wave peaks (that's what gives fire its glow).
+TINT = (0.8, 0.85, 1.0)     #: moonlight
+# TINT = (1.0, 0.45, 0.1)   #: fire
+# TINT = (0.2, 0.7, 1.0)    #: ice
+# TINT = (1.0, 0.25, 1.0)   #: magenta
+BOOST = 1.35      # >1 = channels saturate early (brighter, punchier).. try 1.0
+
+PALETTE = ((0.8, 0.85, 1.0), (1.0, 0.45, 0.1),
+           (0.2, 0.7, 1.0), (1.0, 0.25, 1.0))   # what LEFT/RIGHT cycle
 
 TAU = 6.28318
 
 
 def tinted(glow, tint):
-    # this ring's brightness times the scheme's tint, capped at full
-    return (min(1.0, glow * tint[0]),
-            min(1.0, glow * tint[1]),
-            min(1.0, glow * tint[2]))
+    # this ring's brightness times the scheme's tint (and BOOST), capped at full
+    g = glow * BOOST
+    return (min(1.0, g * tint[0]),
+            min(1.0, g * tint[1]),
+            min(1.0, g * tint[2]))
 
 
 class Tunnel(app.App):
-    """Keep time, cycle colour schemes, draw the breathing ring stack."""
+    # Keep time, cycle colour schemes, draw the breathing ring stack.
 
     def __init__(self, config=None):
         super().__init__()
         self.button_states = Buttons(self)
         self.fg = False        # have we taken the screen yet?
         self.t = 0.0           # seconds since start
-        self.scheme = 0        # which tint is live
+        self.tint = TINT       # the live tint (set by the picker above)
+
+    # Carry time across live edits, not the tint: clicking a scheme swaps it in.
+    __live_state__ = ("t",)
 
     def update(self, delta):
         if not self.fg:
@@ -70,7 +80,8 @@ class Tunnel(app.App):
             return False
         if b.get(BUTTON_TYPES["RIGHT"]) or b.get(BUTTON_TYPES["LEFT"]):
             b.clear()
-            self.scheme = (self.scheme + 1) % len(SCHEMES)
+            here = PALETTE.index(self.tint) if self.tint in PALETTE else 0
+            self.tint = PALETTE[(here + 1) % len(PALETTE)]
         return True
 
     def draw(self, ctx):
@@ -81,7 +92,7 @@ class Tunnel(app.App):
         # different speeds, so the path never quite repeats itself
         ox = math.sin(t * 0.7) * WANDER
         oy = math.cos(t * 0.9) * WANDER
-        tint = SCHEMES[self.scheme % len(SCHEMES)]
+        tint = self.tint
         for k in range(RINGS):
             # this ring's point on the wave rolling outward along the stack
             glow = 0.5 + 0.5 * math.sin(k * RIPPLE - t * BREATH)
@@ -103,5 +114,4 @@ __app_export__ = Tunnel
 # - set WANDER to 0.0 -- the drift stops and you get pure breathing rings
 # - make BREATH negative (-3.0): the wave rolls inward and the tunnel
 #   swallows you instead of spitting you out
-# - add a scheme: put (1.2, 0.3, 1.2) at the end of SCHEMES (magenta) and
-#   press RIGHT until it comes up
+# - click a scheme above, then click its colour swatch to invent your own tint

@@ -140,6 +140,32 @@ These are the facts the demos were written against — handy if you fork one:
   and fall back — some IMU functions exist only on hardware, others only in the
   sim (`starfield` shows the pattern).
 
+### Conventions the web playground rewards
+
+The [live playground](web/) adds a couple of zero-cost affordances if you
+write the demo a certain way. They are all plain Python — a badge or the
+official sim ignores them:
+
+- **Scrub / swatch**: any plain int/float literal is drag-to-change, and any
+  three `0.0–1.0` literals that form an `(r, g, b)` tuple or `ctx.rgb(...)`
+  arguments get a click-to-open colour picker. So hoist the fun knobs into the
+  `# --- tweak me ---` block as bare literals and express colours as
+  `(r, g, b)` constants, not computed/HSV expressions.
+- **Pick-one groups** (`#: label`): a run of adjacent same-indent lines each
+  ending in a `#: name` marker becomes a clickable radio group — exactly the
+  uncommented one runs, the rest are commented out, and clicking swaps live.
+  Great for "choose a formula / palette / rule". `tixy` and `tunnel` show it:
+  ```python
+  LIVE = waves      #: waves
+  # LIVE = spin     #: spin
+  # LIVE = ripple   #: ripple
+  ```
+- **`__live_state__`**: on an edit the playground carries scalar state
+  (`t`, `speed`, …) into the new instance so the animation never restarts. Set
+  `__live_state__ = ("t",)` on the class to list exactly what to carry — leave
+  the picked value *out* so clicking a new choice takes effect immediately
+  (both `tixy` and `tunnel` do this).
+
 ## Layout
 
 ```
