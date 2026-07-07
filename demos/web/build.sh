@@ -120,6 +120,7 @@ python3 - "$DEMOS_DIR" "$DIST/demos" <<'EOF'
 import json, os, re, shutil, sys
 demos_dir, out = sys.argv[1], sys.argv[2]
 entries = []
+missing_previews = []
 for name in os.listdir(demos_dir):
     app = os.path.join(demos_dir, name, "app.py")
     if not os.path.isfile(app):
@@ -134,11 +135,21 @@ for name in os.listdir(demos_dir):
     else:
         n, title, blurb = 999, name, ""
     shutil.copy(app, os.path.join(out, f"{name}.py"))
+    # Bundled gallery thumbnail: an emulator-captured frame, committed next
+    # to the demo (regenerate via renderPreviewPack — see src/README).
+    preview = os.path.join(demos_dir, name, "preview.png")
+    if os.path.isfile(preview):
+        shutil.copy(preview, os.path.join(out, f"{name}.png"))
+    else:
+        missing_previews.append(name)
     entries.append({"id": name, "n": n, "title": title, "blurb": blurb})
 entries.sort(key=lambda e: e["n"])
 with open(os.path.join(out, "demos.json"), "w") as f:
     json.dump(entries, f, indent=1)
 print(f"   {len(entries)} demos: " + ", ".join(e["id"] for e in entries))
+if missing_previews:
+    print("   WARNING: no preview.png (gallery shows a skeleton tile): "
+          + ", ".join(sorted(missing_previews)))
 EOF
 
 # --- 3b. the one-file version: all code + mission, as markdown -----------------

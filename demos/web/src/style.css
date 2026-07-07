@@ -481,9 +481,23 @@ body.flyout-open #dock-tiles { visibility: hidden; }
 /* preview thumbnails: captured badge frames on a skeleton placeholder */
 .thumb {
   background: #0a0a0a;
-  background-size: cover;
-  background-position: center;
   position: relative;
+}
+/* Drawn as the round badge screen: a circle as tall as the tile, centred.
+   The screen disc is the inscribed circle of the square framebuffer, so a
+   full-bleed square image shown round IS exactly the screen. */
+.thumb.has-preview::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background-image: var(--preview);
+  background-size: 100% 100%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 .thumb:not(.has-preview)::after {
   content: "";

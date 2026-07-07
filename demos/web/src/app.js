@@ -277,7 +277,13 @@ function onWorkerMessage(msg) {
       previews.setNow(url); // the dock tile mirrors whatever is running
       const tag = msg.id;
       if (tag?.key && !isStale && library && tag.key === library.currentKey()) {
-        previews.record(tag.key, tag.hash, url);
+        if (library.wantsCapture(tag)) {
+          previews.record(tag.key, tag.hash, url);
+        } else {
+          // A demo back at its shipped source: the bundled preview is the
+          // truth again, so retire any cached draft-era capture.
+          previews.dropPreview(tag.key);
+        }
       }
       break;
     }

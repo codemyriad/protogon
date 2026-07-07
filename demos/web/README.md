@@ -13,13 +13,23 @@ range and clamps its drag (with several numbers on a line, `a`/`b`/`c`/… pick
 them by position). Pause badge time and edits re-render the frozen frame.
 
 Every page is one demo: `/#tixy`, `/#ledring`, … The **▤ browse flyout** (icon
-dock, far left) lists all fourteen — and your own snippets — as cards, each
-with a **live thumbnail**: a frame captured from the emulator a few seconds
-after that script starts (cached in `localStorage`, regenerated when the code
-changes; a background worker quietly fills in the ones you haven't run yet).
-Cards carry quick actions — ⚡ flash, ⧉ duplicate, ✕ delete — and a search box
-filters both sections. The `?` button explains the interaction model in an
-info window.
+dock, far left) lists all fifteen — and your own snippets — as cards, each
+with a thumbnail drawn as the **round badge screen**. Demo thumbnails are
+**bundled**: emulator-captured frames committed as `demos/<name>/preview.png`
+and shipped by `build.sh`. **Your scripts** (snippets and edited demos) are
+captured live in the browser — a frame ~3 s after the script starts, cached
+in `localStorage` and regenerated when the code changes; a background worker
+quietly fills in snippets you haven't run yet. Cards carry quick actions —
+⚡ flash, ⧉ duplicate, ✕ delete — and a search box filters both sections. The
+`?` button explains the interaction model in an info window.
+
+To regenerate the bundled demo previews after changing a demo (browser
+console on the playground, then save each entry of the returned map over
+`demos/<id>/preview.png` and rebuild):
+
+```js
+await playground.previews.renderPreviewPack(playground.library.demoSources())
+```
 
 ## Keep your own snippets
 
@@ -28,9 +38,10 @@ lets you **save** it as your own snippet (they live in `localStorage`); from
 there **duplicate** variants, **rename**, **revert**. Unsaved edits autosave
 as a draft keyed to what you were editing, so closing the tab never loses
 work. `＋ new` starts from a small template. The `⋯` menu **downloads a
-`.py`**, copies a **share link** (the whole program deflate-packed into the
-URL — no server), duplicates or deletes the open snippet, and **backs up /
-imports** all your snippets as JSON.
+`.py`**, duplicates or deletes the open snippet, and **backs up all your
+snippets** as a zip of `.py` files (plus a `snippets.json` manifest, so a
+future import can restore them losslessly). Share links (`#gz/…` URLs, the
+whole program deflate-packed into the URL) still resolve.
 
 The byte counter next to the name shows the size after comments are stripped,
 against the ~6.5 KB a hexpansion EEPROM holds — it turns amber, then red, as
@@ -111,7 +122,7 @@ and takes effect immediately.
 | `src/editor.js` | CodeMirror 6: scrub, colour swatch, pick-one, bool toggle, error pinning |
 | `src/store.js` | snippet + draft storage, share-link encode, JSON export/import |
 | `src/library.js` | the gallery cards + snippet toolbar, hash routing, size gauge |
-| `src/previews.js` | captured-frame thumbnails: cache, dock tile, background pre-gen |
+| `src/previews.js` | thumbnails: bundled demo art, live capture cache, dock tile, pre-gen |
 | `src/flash.js` | the `⚡ flash…` dialog: connect → scan → pick → flash |
 | `src/serial.js` | WebSerial MicroPython raw-REPL client (mpremote, in the page) |
 | `src/badge-scripts.js` | the Python run on the badge to scan + flash EEPROMs |

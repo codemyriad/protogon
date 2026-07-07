@@ -19,6 +19,7 @@
 
 import * as store from "./store.js";
 import * as previews from "./previews.js";
+import { makeZip } from "./zipfile.js";
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -706,9 +707,10 @@ export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlash
     );
   }
 
-  function download(filename, text, type = "text/x-python") {
+  function download(filename, data, type = "text/x-python") {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type }));
+    const blob = data instanceof Blob ? data : new Blob([data], { type });
+    a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
@@ -717,18 +719,6 @@ export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlash
   $("#menu-download").addEventListener("click", () => {
     closeMenu();
     download(`${slug(currentName())}.py`, getCode());
-  });
-
-  $("#menu-share").addEventListener("click", async () => {
-    closeMenu();
-    const data = await store.encodeShare(getCode());
-    const url = `${location.origin}${location.pathname}#gz/${data}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast(`share link copied (${url.length} chars) — the code IS the link`);
-    } catch {
-      prompt("copy this share link:", url);
-    }
   });
 
   menuFork.addEventListener("click", () => {
@@ -741,37 +731,29 @@ export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlash
     remove();
   });
 
+  // Backup = a real zip of .py files you can open anywhere, plus a
+  // snippets.json manifest so importing it back is lossless (ids, names,
+  // dates, basedOn survive).
   $("#menu-export").addEventListener("click", () => {
     closeMenu();
-    const n = store.listSnippets().length;
-    if (!n) return toast("no snippets to back up yet");
+    const snippets = store.listSnippets();
+    if (!snippets.length) return toast("no snippets to back up yet");
+    const used = new Set();
+    const files = snippets.map((s) => {
+      const base = slug(s.name);
+      let name = `${base}.py`;
+      for (let n = 2; used.has(name); n++) name = `${base}-${n}.py`;
+      used.add(name);
+      return { name, text: s.code, at: s.updatedAt || s.createdAt };
+    });
+    files.push({ name: "snippets.json", text: store.exportAll() });
     download(
-      `tildagon-snippets-${new Date().toISOString().slice(0, 10)}.json`,
-      store.exportAll(),
-      "application/json"
+      `tildagon-snippets-${new Date().toISOString().slice(0, 10)}.zip`,
+      makeZip(files)
     );
-    toast(`backed up ${n} snippet${n === 1 ? "" : "s"}`);
+    toast(`backed up ${snippets.length} snippet${snippets.length === 1 ? "" : "s"}`);
   });
 
-  $("#menu-import").addEventListener("click", () => {
-    closeMenu();
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json,application/json";
-    input.addEventListener("change", async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const { added, skipped } = store.importAll(await file.text());
-        buildMineCards();
-        toast(`imported ${added} snippet${added === 1 ? "" : "s"}` +
-              (skipped ? ` (${skipped} already here)` : ""));
-      } catch (err) {
-        toast(`import failed: ${err.message}`);
-      }
-    });
-    input.click();
-  });
 
   // --- wiring ------------------------------------------------------------------
   saveBtn.addEventListener("click", save);
@@ -835,15 +817,27 @@ export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlash
     currentKey: () => (state.ref ? refKey(state.ref) : null),
     switchTo,
     save,
-    // What the preview pre-generator should run: every demo and snippet, as
-    // the editor would open it (draft over baseline), keyed + content-hashed.
+    // Should a live capture be cached under this key? User scripts always;
+    // an UNMODIFIED demo is covered by its bundled preview.png, so caching a
+    // duplicate would only bloat localStorage (and go stale if the shipped
+    // demo is ever updated).
+    wantsCapture({ key, hash }) {
+      if (!key.startsWith("demo:")) return true;
+      const src = srcCache.get(key.slice(5));
+      return src == null || previews.hashSrc(src) !== hash;
+    },
+    // What the preview pre-generator should run — USER scripts only: every
+    // snippet, plus demos the user has draft-edited (as the editor would
+    // open them). Pristine demos ship their previews with the site.
     async getPregenItems() {
       await prefetchDone;
       const items = [];
       for (const d of manifest) {
         const key = `demo:${d.id}`;
-        const src = store.getDraft(key) ?? srcCache.get(d.id);
-        if (src) items.push({ key, src, hash: previews.hashSrc(src) });
+        const draft = store.getDraft(key);
+        if (draft != null && draft !== srcCache.get(d.id)) {
+          items.push({ key, src: draft, hash: previews.hashSrc(draft) });
+        }
       }
       for (const s of store.listSnippets()) {
         const key = `snip:${s.id}`;
@@ -852,6 +846,12 @@ export async function initLibrary({ setCode, getCode, onTitle, onPicked, onFlash
       }
       return items;
     },
+    // Maintainer hook: the shipped demo sources, for renderPreviewPack()
+    // (regenerates the committed demos/<name>/preview.png files).
+    demoSources: () =>
+      manifest
+        .map((d) => ({ id: d.id, src: srcCache.get(d.id) }))
+        .filter((x) => x.src),
     state, // for QA
   };
 }
