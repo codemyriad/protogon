@@ -169,6 +169,9 @@ open(out, "w").write("\n".join(parts) + "\n")
 print(f"   code.md: {os.path.getsize(out)//1024} KiB, {len(entries)} programs")
 EOF
 
+# --- 3c. hardware bring-up notes ------------------------------------------------
+cp "$HERE/hardware-notes.md" "$DIST/hardware-notes.md"
+
 # --- 4. bundle the JS -----------------------------------------------------------
 echo ">> bundling editor + app (esbuild)"
 cd "$HERE"
