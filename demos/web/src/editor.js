@@ -86,6 +86,9 @@ const scrubTheme = EditorView.baseTheme({
   ".cm-scrubbable": {
     cursor: "ew-resize",
     borderBottom: "1px dotted currentColor",
+    // Without this, a finger-drag on a number pans the editor instead of
+    // scrubbing (the browser claims the gesture before pointermove fires).
+    touchAction: "none",
   },
   "&.cm-scrubbing, &.cm-scrubbing *": {cursor: "ew-resize !important"},
 });
@@ -262,7 +265,10 @@ class SwatchWidget extends WidgetType {
     el.className = "cm-color-swatch";
     el.style.background = this.hex;
     el.title = "pick a colour";
-    el.addEventListener("mousedown", (ev) => {
+    // pointerdown, not mousedown: on touch the synthesized mousedown may never
+    // fire on a tiny inline widget, and it wouldn't carry the user-activation
+    // the native colour picker needs. pointerdown covers mouse + touch + pen.
+    el.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       openPicker(view, el, this.hex, this.nums);
@@ -361,6 +367,7 @@ const swatchTheme = EditorView.baseTheme({
     marginRight: "5px",
     verticalAlign: "-0.1em",
     cursor: "pointer",
+    touchAction: "none",
   },
 });
 
@@ -427,8 +434,8 @@ class PickWidget extends WidgetType {
     const el = document.createElement("span");
     el.className = "cm-pick" + (this.active ? " cm-pick-on" : "");
     el.textContent = (this.active ? "◉ " : "○ ") + this.label;
-    el.title = this.active ? "running — click another to switch" : `click to run: ${this.label}`;
-    el.addEventListener("mousedown", (ev) => {
+    el.title = this.active ? "running — tap another to switch" : `tap to run: ${this.label}`;
+    el.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       pickChoice(view, this.lineNo);
@@ -507,12 +514,13 @@ const pickTheme = EditorView.baseTheme({
   ".cm-pick": {
     cursor: "pointer",
     fontSize: "0.85em",
-    padding: "0 0.4em",
+    padding: "0.1em 0.5em",
     marginLeft: "0.3em",
     borderRadius: "999px",
     border: "1px solid rgba(255,255,255,0.18)",
     color: "#8b96a0",
     userSelect: "none",
+    touchAction: "none",
   },
   ".cm-pick:hover": { borderColor: "rgba(255,255,255,0.4)", color: "#d6dbe0" },
   ".cm-pick-on": {
@@ -570,7 +578,7 @@ const boolHighlighter = ViewPlugin.fromClass(
 );
 
 const boolClick = EditorView.domEventHandlers({
-  mousedown(event, view) {
+  pointerdown(event, view) {
     const target = event.target;
     if (!(target instanceof HTMLElement) || !target.classList.contains("cm-bool")) return false;
     const pos = view.posAtDOM(target);
@@ -593,6 +601,7 @@ const boolTheme = EditorView.baseTheme({
   ".cm-bool": {
     cursor: "pointer",
     borderBottom: "1px dotted currentColor",
+    touchAction: "none",
   },
 });
 
