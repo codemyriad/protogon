@@ -1,5 +1,7 @@
 # A prototyping board to build your hexpansion
 
+![The protogon board](top.png)
+
 Features:
 
 * 64 Kbit (8 KiB) EEPROM
