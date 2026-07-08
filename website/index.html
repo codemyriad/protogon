@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>protogon — a prototyping board to build your hexpansion</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+  }
+  h1 { line-height: 1.2; }
+  code {
+    font-family: ui-monospace, monospace;
+    background: rgba(128, 128, 128, .15);
+    padding: 0 .25em;
+    border-radius: 3px;
+  }
+  img { max-width: 100%; height: auto; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>A prototyping board to build your hexpansion</h1>
+
+<p>Features:</p>
+
+<ul>
+  <li>64 Kbit (8 KiB) EEPROM</li>
+  <li>EEPROM write protection jumper (P1): short it to write-protect</li>
+  <li>Qwiic connector</li>
+  <li>I2C pull-ups</li>
+  <li>Power LED</li>
+  <li>max 3V3 current: 600 mA</li>
+</ul>
+
+<h2>Parts to solder</h2>
+
+<ul>
+  <li><code>R1</code>: one 402 Ω resistor</li>
+  <li><code>R2</code>, <code>R3</code> and <code>R4</code>: three 4.7 kΩ resistors</li>
+  <li><code>C1</code>: a 0.1 µF capacitor</li>
+  <li><code>D1</code>: an LED</li>
+  <li><code>U1</code>: a 64 Kbit EEPROM</li>
+  <li><code>U2</code>: a Qwiic connector</li>
+</ul>
+
+<p>We missed a mark on the board. This is the correct LED polarity:</p>
+
+<p><img src="diode-mark.png" alt="Close-up of D1: the bar of the diode symbol marks the cathode, on the GND side" width="287" height="197"></p>
+
+<h2>Online code editor for badge apps</h2>
+
+<p>We extended (vibe coded) the <a href="https://emulator.badge.emfcamp.org/">badge emulator</a> and added a code editor.
+<a href="https://protogon.codemyriad.io/editor">You can try live coding your badge app here</a></p>
+
+<h2>Github repository</h2>
+
+<p>See <a href="https://github.com/codemyriad/protogon">https://github.com/codemyriad/protogon</a> for source KiCad files and more</p>
+</body>
+</html>
