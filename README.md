@@ -26,6 +26,7 @@ Even when not populated with components the board can be used for a basic hexpan
 The KiCad files are in the root: `codemyriad-protogon.kicad_*`.
 The `fabrication/codemyriad-protogon-fab.zip` file is ready to upload to produce the board through a PCB manufacturing service. Make sure you select 1.0 mm FR4 and ENIG finish!
 `fabrication/bom-lcsc.csv` contains a Bill Of Materials with LCSC codes.
+`fabrication/gerbers/codemyriad-protogon-F_Paste.gtp` is the top solder paste layer, needed to order an SMT stencil (all SMD parts are on the top side, so only a top stencil is needed).
 
 
 ## Credits

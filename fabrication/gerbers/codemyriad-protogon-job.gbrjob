@@ -59,6 +59,11 @@
       "FilePolarity": "Negative"
     },
     {
+      "Path": "codemyriad-protogon-F_Paste.gtp",
+      "FileFunction": "SolderPaste,Top",
+      "FilePolarity": "Positive"
+    },
+    {
       "Path": "codemyriad-protogon-B_Mask.gbs",
       "FileFunction": "SolderMask,Bot",
       "FilePolarity": "Negative"
